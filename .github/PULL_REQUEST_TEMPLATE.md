@@ -1,0 +1,11 @@
+## What & why
+
+<!-- What does this change and why? Link issues: Closes #123 -->
+
+## Checklist
+
+- [ ] `make lint` and `make test` pass locally
+- [ ] Docs/examples updated if behavior changed
+- [ ] New passes keep idempotency (tested)
+- [ ] Commits follow Conventional Commits (changelog is generated automatically)
+- [ ] No secrets committed

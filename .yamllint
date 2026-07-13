@@ -1,0 +1,5 @@
+# SHA-pinned `uses:` lines legitimately exceed 80 chars.
+extends: relaxed
+rules:
+  line-length:
+    max: 140

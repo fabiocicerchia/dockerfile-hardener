@@ -1,0 +1,39 @@
+name: code-quality
+
+# Complements ci.yml (which runs ruff + pytest + build): this lints the repo
+# itself — workflows, editorconfig, typos — and runs the pre-commit hooks.
+# ponytail: actions are tag-pinned; dependabot (github-actions) keeps them
+# fresh — SHA-pin to match ci.yml if scorecard flags it.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Lint the GitHub Actions workflows themselves.
+      - name: actionlint
+        uses: raven-actions/actionlint@v2
+
+      # Enforce .editorconfig (indentation, EOL, trailing whitespace).
+      - name: editorconfig-checker
+        uses: editorconfig-checker/action-editorconfig-checker@v2
+
+      # Catch common typos in code and docs.
+      - name: typos
+        uses: crate-ci/typos@master
+
+      # pre-commit runs the hooks in .pre-commit-config.yaml (ruff, gitleaks, …).
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: pre-commit
+        uses: pre-commit/action@v3.0.1
