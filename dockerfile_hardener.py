@@ -127,6 +127,47 @@ def add_healthcheck_hint(lines):
     return lines
 
 
+_BUILD_TIME_PACKAGES = {
+    "build-essential",
+    "gcc",
+    "g++",
+    "make",
+    "cmake",
+    "python3-dev",
+    "libffi-dev",
+    "musl-dev",
+    "cargo",
+    "rustc",
+}
+
+_MULTI_STAGE_HINT = (
+    "# hardener: build tooling detected in a single-stage build — consider a\n"
+    "# multi-stage build (FROM ... AS builder) so build deps don't ship in the\n"
+    "# final image\n"
+)
+
+
+def suggest_multi_stage(lines):
+    """Hint at a builder stage when a single-stage build installs build-only tooling."""
+    if sum(1 for ln in lines if re.match(r"^FROM\s+", ln, re.I)) != 1:
+        return lines
+    if _MULTI_STAGE_HINT in "".join(lines):
+        return lines
+    has_build_deps = any(
+        re.search(r"\b(?:apt-get|apk)\s+(?:add|install)\b", ln)
+        and any(pkg in ln for pkg in _BUILD_TIME_PACKAGES)
+        for ln in lines
+    )
+    if not has_build_deps:
+        return lines
+    note(
+        "multi-stage",
+        "single-stage build installs compiler/build tooling that could live in a "
+        "discarded builder stage",
+    )
+    return lines + [_MULTI_STAGE_HINT]
+
+
 PASSES = [
     pin_latest_base,
     add_no_cache_flags,
@@ -134,6 +175,7 @@ PASSES = [
     add_nonroot_user,
     copy_chown,
     add_healthcheck_hint,
+    suggest_multi_stage,
 ]
 
 

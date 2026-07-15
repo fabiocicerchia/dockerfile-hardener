@@ -41,3 +41,29 @@ def test_idempotent():
     once, _ = harden(src)
     twice, _ = harden(once)
     assert once == twice
+
+
+def test_multi_stage_hint_when_single_stage_has_build_deps():
+    out, changes = harden(
+        'FROM alpine:3.22\nRUN apk add --no-cache build-essential\nCMD ["app"]\n'
+    )
+    assert "multi-stage build" in out
+    assert any(r == "multi-stage" for r, _ in changes)
+
+
+def test_multi_stage_hint_skipped_without_build_deps():
+    out, changes = harden('FROM alpine:3.22\nRUN apk add --no-cache curl\nCMD ["app"]\n')
+    assert "multi-stage" not in out
+    assert not any(r == "multi-stage" for r, _ in changes)
+
+
+def test_multi_stage_hint_skipped_when_already_multi_stage():
+    src = (
+        "FROM alpine:3.22 AS builder\n"
+        "RUN apk add --no-cache build-essential\n"
+        "FROM alpine:3.22\n"
+        'CMD ["app"]\n'
+    )
+    out, changes = harden(src)
+    assert "multi-stage build" not in out
+    assert not any(r == "multi-stage" for r, _ in changes)
