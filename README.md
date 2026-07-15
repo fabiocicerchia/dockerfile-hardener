@@ -34,6 +34,24 @@ pin untagged bases · `--no-install-recommends` · `apk --no-cache` ·
 HEALTHCHECK hint when a port is exposed. All passes are **idempotent**
 (hardening a hardened file is a no-op — tested).
 
+## Install
+
+```sh
+pipx install git+https://github.com/fabiocicerchia/dockerfile-hardener
+```
+
+Or with pip:
+
+```sh
+pip install git+https://github.com/fabiocicerchia/dockerfile-hardener
+```
+
+Or the one-line installer:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/fabiocicerchia/dockerfile-hardener/main/install.sh | bash
+```
+
 ## Usage
 
 ```sh
