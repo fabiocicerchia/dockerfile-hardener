@@ -66,7 +66,7 @@ dockerfile-hardener Dockerfile --fail-on-changes   # CI gate
 - [x] 7 rewrite passes, unified diff, explain mode, idempotency tests
 - [x] Multi-stage suggestion pass (build deps → builder stage)
 - [ ] Version pinning via registry lookup (replace the TODO with a digest)
-- [ ] `COPY --chown` and read-only rootfs advice tied to the USER pass
+- [x] `COPY --chown` and read-only rootfs advice tied to the USER pass
 - [ ] GitHub Action posting the diff as a PR suggestion
 
 ## Development

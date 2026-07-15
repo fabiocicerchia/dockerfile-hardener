@@ -103,14 +103,35 @@ def add_nonroot_user(lines):
     return lines
 
 
+_READONLY_HINT = (
+    "# hardener: run this image with `docker run --read-only` for a "
+    "read-only rootfs\n"
+)
+
+
 def copy_chown(lines):
-    """Placeholder pass for COPY --chown suggestions (currently a no-op)."""
+    """Add COPY --chown once a non-root USER is set, and hint at a read-only rootfs."""
+    user, user_idx = None, None
+    for i, ln in enumerate(lines):
+        m = re.match(r"^USER\s+(\S+)", ln, re.I)
+        if m:
+            user, user_idx = m.group(1), i
+    if user is None:
+        return lines
     out = []
-    for line in lines:
-        if re.match(r"^COPY\s+(?!--)", line) and "--chown" not in line:
-            out.append(line)  # suggestion only when USER exists is complex; keep simple
+    for i, line in enumerate(lines):
+        if i > user_idx and re.match(r"^COPY\s+(?!--)", line):
+            prefix, rest = line.split(None, 1)
+            out.append(f"{prefix} --chown={user}:{user} {rest}")
+            note("copy-chown", f"COPY after USER {user} should own the files it copies")
         else:
             out.append(line)
+    if _READONLY_HINT not in out:
+        out = out[: user_idx + 1] + [_READONLY_HINT] + out[user_idx + 1 :]
+        note(
+            "read-only-rootfs",
+            "non-root images are good read-only-rootfs candidates too",
+        )
     return out
 
 

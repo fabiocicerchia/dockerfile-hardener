@@ -67,3 +67,24 @@ def test_multi_stage_hint_skipped_when_already_multi_stage():
     out, changes = harden(src)
     assert "multi-stage build" not in out
     assert not any(r == "multi-stage" for r, _ in changes)
+
+
+def test_copy_gets_chown_after_existing_user():
+    out, changes = harden('FROM alpine:3.22\nUSER 1000\nCOPY app /app\nCMD ["app"]\n')
+    assert "COPY --chown=1000:1000 app /app" in out
+    assert any(r == "copy-chown" for r, _ in changes)
+    assert "--read-only" in out
+    assert any(r == "read-only-rootfs" for r, _ in changes)
+
+
+def test_copy_before_user_is_left_alone():
+    out, changes = harden('FROM alpine:3.22\nCOPY app /app\nCMD ["app"]\n')
+    assert "COPY app /app\n" in out
+    assert not any(r == "copy-chown" for r, _ in changes)
+
+
+def test_copy_chown_idempotent():
+    src = 'FROM alpine:3.22\nUSER 1000\nCOPY app /app\nCMD ["app"]\n'
+    once, _ = harden(src)
+    twice, _ = harden(once)
+    assert once == twice
