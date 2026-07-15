@@ -4,6 +4,8 @@
 [![Security](https://github.com/fabiocicerchia/dockerfile-hardener/actions/workflows/security.yml/badge.svg)](https://github.com/fabiocicerchia/dockerfile-hardener/actions/workflows/security.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/fabiocicerchia/dockerfile-hardener/badge)](https://securityscorecards.dev/viewer/?uri=github.com/fabiocicerchia/dockerfile-hardener)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ffabiocicerchia%2Fdockerfile-hardener.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ffabiocicerchia%2Fdockerfile-hardener?ref=badge_shield)
+[![Release](https://img.shields.io/github/v/release/fabiocicerchia/dockerfile-hardener)](https://github.com/fabiocicerchia/dockerfile-hardener/releases)
 
 Rewrites Dockerfiles to best practice **as a suggested diff, not lint
 warnings**. hadolint tells you what's wrong; this hands you the fixed file.
