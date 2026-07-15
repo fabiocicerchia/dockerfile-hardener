@@ -1,4 +1,4 @@
-from dockerfile_hardener import harden
+from dockerfile_hardener import harden, pin_digests, resolve_digest
 
 
 def test_pins_untagged_base():
@@ -88,3 +88,41 @@ def test_copy_chown_idempotent():
     once, _ = harden(src)
     twice, _ = harden(once)
     assert once == twice
+
+
+def test_pin_digests_uses_injected_resolver():
+    lines = ["FROM alpine:3.22\n", 'CMD ["app"]\n']
+    out = pin_digests(lines, resolver=lambda image, tag: "sha256:" + "0" * 64)
+    assert out[0] == f"FROM alpine:3.22@sha256:{'0' * 64}\n"
+
+
+def test_pin_digests_skips_when_resolver_fails():
+    lines = ["FROM alpine:3.22\n"]
+    out = pin_digests(lines, resolver=lambda image, tag: None)
+    assert out == lines
+
+
+def test_pin_digests_skips_scratch_and_already_pinned():
+    lines = ["FROM scratch\n", f"FROM alpine:3.22@sha256:{'a' * 64}\n"]
+    out = pin_digests(lines, resolver=lambda image, tag: "sha256:" + "b" * 64)
+    assert out == lines
+
+
+def test_resolve_digest_returns_none_for_qualified_registry():
+    assert resolve_digest("ghcr.io/foo/bar", "latest", fetch=lambda *a, **k: "x") is None
+
+
+def test_resolve_digest_uses_injected_fetch():
+    calls = []
+
+    def fake_fetch(url, headers=None, digest_header=False):
+        calls.append(url)
+        if "auth.docker.io" in url:
+            return '{"token": "t"}'
+        assert headers["Authorization"] == "Bearer t"
+        assert digest_header
+        return "sha256:" + "c" * 64
+
+    digest = resolve_digest("alpine", "3.22", fetch=fake_fetch)
+    assert digest == "sha256:" + "c" * 64
+    assert any("library/alpine" in u for u in calls)

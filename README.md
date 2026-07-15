@@ -59,13 +59,14 @@ pipx install .
 dockerfile-hardener Dockerfile                # print the diff
 dockerfile-hardener Dockerfile --write        # apply
 dockerfile-hardener Dockerfile --fail-on-changes   # CI gate
+dockerfile-hardener Dockerfile --pin-digests       # resolve FROM tags to a digest (Docker Hub, needs network)
 ```
 
 ## Status & roadmap
 
 - [x] 7 rewrite passes, unified diff, explain mode, idempotency tests
 - [x] Multi-stage suggestion pass (build deps → builder stage)
-- [ ] Version pinning via registry lookup (replace the TODO with a digest)
+- [x] Version pinning via registry lookup (replace the TODO with a digest)
 - [x] `COPY --chown` and read-only rootfs advice tied to the USER pass
 - [ ] GitHub Action posting the diff as a PR suggestion
 
