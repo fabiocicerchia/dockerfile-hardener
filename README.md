@@ -68,7 +68,7 @@ dockerfile-hardener Dockerfile --pin-digests       # resolve FROM tags to a dige
 - [x] Multi-stage suggestion pass (build deps → builder stage)
 - [x] Version pinning via registry lookup (replace the TODO with a digest)
 - [x] `COPY --chown` and read-only rootfs advice tied to the USER pass
-- [ ] GitHub Action posting the diff as a PR suggestion
+- [x] GitHub Action posting the diff as a PR suggestion
 
 ## Development
 
