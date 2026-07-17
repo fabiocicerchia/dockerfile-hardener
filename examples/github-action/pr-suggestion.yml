@@ -1,0 +1,53 @@
+name: dockerfile-hardener suggestions
+
+# Drop this in a consuming repo's .github/workflows/ to get a PR comment with
+# a ready-to-apply suggestion whenever a Dockerfile isn't hardened.
+
+on:
+  pull_request:
+    paths:
+      - "**/Dockerfile*"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  suggest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - run: pip install dockerfile-hardener
+      - name: Comment a hardening suggestion per changed Dockerfile
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -e
+          changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- '**/Dockerfile*')
+          for f in $changed; do
+            [ -f "$f" ] || continue
+            dockerfile-hardener "$f" > /tmp/diff.txt || true
+            [ -s /tmp/diff.txt ] || continue
+            {
+              echo "### dockerfile-hardener suggestion for \`$f\`"
+              echo
+              echo '```suggestion'
+              dockerfile-hardener "$f" --write
+              cat "$f"
+              echo '```'
+              echo
+              echo "<details><summary>diff</summary>"
+              echo
+              echo '```diff'
+              cat /tmp/diff.txt
+              echo '```'
+              echo "</details>"
+            } > /tmp/body.md
+            gh pr comment "$PR_NUMBER" --body-file /tmp/body.md
+          done

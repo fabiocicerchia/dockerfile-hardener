@@ -4,6 +4,8 @@
 [![Security](https://github.com/fabiocicerchia/dockerfile-hardener/actions/workflows/security.yml/badge.svg)](https://github.com/fabiocicerchia/dockerfile-hardener/actions/workflows/security.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/fabiocicerchia/dockerfile-hardener/badge)](https://securityscorecards.dev/viewer/?uri=github.com/fabiocicerchia/dockerfile-hardener)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ffabiocicerchia%2Fdockerfile-hardener.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ffabiocicerchia%2Fdockerfile-hardener?ref=badge_shield)
+[![Release](https://img.shields.io/github/v/release/fabiocicerchia/dockerfile-hardener)](https://github.com/fabiocicerchia/dockerfile-hardener/releases)
 
 Rewrites Dockerfiles to best practice **as a suggested diff, not lint
 warnings**. hadolint tells you what's wrong; this hands you the fixed file.
@@ -32,6 +34,24 @@ pin untagged bases · `--no-install-recommends` · `apk --no-cache` ·
 HEALTHCHECK hint when a port is exposed. All passes are **idempotent**
 (hardening a hardened file is a no-op — tested).
 
+## Install
+
+```sh
+pipx install git+https://github.com/fabiocicerchia/dockerfile-hardener
+```
+
+Or with pip:
+
+```sh
+pip install git+https://github.com/fabiocicerchia/dockerfile-hardener
+```
+
+Or the one-line installer:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/fabiocicerchia/dockerfile-hardener/main/install.sh | bash
+```
+
 ## Usage
 
 ```sh
@@ -39,15 +59,8 @@ pipx install .
 dockerfile-hardener Dockerfile                # print the diff
 dockerfile-hardener Dockerfile --write        # apply
 dockerfile-hardener Dockerfile --fail-on-changes   # CI gate
+dockerfile-hardener Dockerfile --pin-digests       # resolve FROM tags to a digest (Docker Hub, needs network)
 ```
-
-## Status & roadmap
-
-- [x] 7 rewrite passes, unified diff, explain mode, idempotency tests
-- [ ] Multi-stage suggestion pass (build deps → builder stage)
-- [ ] Version pinning via registry lookup (replace the TODO with a digest)
-- [ ] `COPY --chown` and read-only rootfs advice tied to the USER pass
-- [ ] GitHub Action posting the diff as a PR suggestion
 
 ## Development
 
