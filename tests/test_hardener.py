@@ -52,7 +52,9 @@ def test_multi_stage_hint_when_single_stage_has_build_deps():
 
 
 def test_multi_stage_hint_skipped_without_build_deps():
-    out, changes = harden('FROM alpine:3.22\nRUN apk add --no-cache curl\nCMD ["app"]\n')
+    out, changes = harden(
+        'FROM alpine:3.22\nRUN apk add --no-cache curl\nCMD ["app"]\n'
+    )
     assert "multi-stage" not in out
     assert not any(r == "multi-stage" for r, _ in changes)
 
@@ -109,7 +111,9 @@ def test_pin_digests_skips_scratch_and_already_pinned():
 
 
 def test_resolve_digest_returns_none_for_qualified_registry():
-    assert resolve_digest("ghcr.io/foo/bar", "latest", fetch=lambda *a, **k: "x") is None
+    assert (
+        resolve_digest("ghcr.io/foo/bar", "latest", fetch=lambda *a, **k: "x") is None
+    )
 
 
 def test_resolve_digest_uses_injected_fetch():

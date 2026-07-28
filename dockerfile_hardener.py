@@ -259,11 +259,15 @@ def pin_digests(lines, resolver=None):
     resolver = resolver or resolve_digest
     out = []
     for line in lines:
-        m = re.match(r"^(FROM\s+)([^\s:@]+):([^\s@]+)(\s+AS\s+\w+)?\s*(#.*)?\n?$", line, re.I)
+        m = re.match(
+            r"^(FROM\s+)([^\s:@]+):([^\s@]+)(\s+AS\s+\w+)?\s*(#.*)?\n?$", line, re.I
+        )
         if m and "@sha256" not in line and m.group(2) != "scratch":
             digest = resolver(m.group(2), m.group(3))
             if digest:
-                out.append(f"{m.group(1)}{m.group(2)}:{m.group(3)}@{digest}{m.group(4) or ''}\n")
+                out.append(
+                    f"{m.group(1)}{m.group(2)}:{m.group(3)}@{digest}{m.group(4) or ''}\n"
+                )
                 note(
                     "pin-digest",
                     f"resolved `{m.group(2)}:{m.group(3)}` to a content digest for "
