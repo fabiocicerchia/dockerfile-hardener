@@ -14,9 +14,7 @@ def test_package_manager_flags_added():
 
 
 def test_apt_gets_cleanup_and_no_recommends():
-    out, _ = harden(
-        "FROM debian:bookworm-slim\nRUN apt-get update && apt-get install -y curl\n"
-    )
+    out, _ = harden("FROM debian:bookworm-slim\nRUN apt-get update && apt-get install -y curl\n")
     assert "--no-install-recommends" in out
     assert "rm -rf /var/lib/apt/lists/*" in out
 
@@ -27,7 +25,7 @@ def test_user_inserted_before_entrypoint_only_when_missing():
     assert lines.index(
         "USER 10001  # TODO: create this user in an earlier layer if needed"
     ) < lines.index('ENTRYPOINT ["app"]')
-    again, changes = harden(out)
+    _again, changes = harden(out)
     assert not any(r == "non-root" for r, _ in changes)
 
 
@@ -44,17 +42,13 @@ def test_idempotent():
 
 
 def test_multi_stage_hint_when_single_stage_has_build_deps():
-    out, changes = harden(
-        'FROM alpine:3.22\nRUN apk add --no-cache build-essential\nCMD ["app"]\n'
-    )
+    out, changes = harden('FROM alpine:3.22\nRUN apk add --no-cache build-essential\nCMD ["app"]\n')
     assert "multi-stage build" in out
     assert any(r == "multi-stage" for r, _ in changes)
 
 
 def test_multi_stage_hint_skipped_without_build_deps():
-    out, changes = harden(
-        'FROM alpine:3.22\nRUN apk add --no-cache curl\nCMD ["app"]\n'
-    )
+    out, changes = harden('FROM alpine:3.22\nRUN apk add --no-cache curl\nCMD ["app"]\n')
     assert "multi-stage" not in out
     assert not any(r == "multi-stage" for r, _ in changes)
 
@@ -111,9 +105,7 @@ def test_pin_digests_skips_scratch_and_already_pinned():
 
 
 def test_resolve_digest_returns_none_for_qualified_registry():
-    assert (
-        resolve_digest("ghcr.io/foo/bar", "latest", fetch=lambda *a, **k: "x") is None
-    )
+    assert resolve_digest("ghcr.io/foo/bar", "latest", fetch=lambda *a, **k: "x") is None
 
 
 def test_resolve_digest_uses_injected_fetch():
