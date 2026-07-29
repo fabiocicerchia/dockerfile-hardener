@@ -27,7 +27,7 @@ def pin_latest_base(lines):
     """Tag untagged `FROM` base images with `:latest` and flag them to pin."""
     out = []
     for line in lines:
-        m = re.match(r"^(FROM\s+)([^\s:@]+)(\s+AS\s+\w+)?\s*$", line, re.I)
+        m = re.match(r"^(FROM\s+)([^\s:@]+)(\s+AS\s+\w+)?\s*$", line, re.IGNORECASE)
         if m and "scratch" not in m.group(2):
             out.append(
                 f"{m.group(1)}{m.group(2)}:latest{m.group(3) or ''}  # TODO: pin a real version\n"
@@ -46,16 +46,9 @@ def add_no_cache_flags(lines):
     out = []
     for line in lines:
         new = line
-        if (
-            re.search(r"\bapt-get install\b", line)
-            and "--no-install-recommends" not in line
-        ):
-            new = line.replace(
-                "apt-get install", "apt-get install --no-install-recommends"
-            )
-            note(
-                "apt-no-recommends", "avoid pulling recommended packages you don't need"
-            )
+        if re.search(r"\bapt-get install\b", line) and "--no-install-recommends" not in line:
+            new = line.replace("apt-get install", "apt-get install --no-install-recommends")
+            note("apt-no-recommends", "avoid pulling recommended packages you don't need")
         if re.search(r"\bapk add\b", line) and "--no-cache" not in line:
             new = new.replace("apk add", "apk add --no-cache")
             note("apk-no-cache", "skip the apk index cache layer")
@@ -85,13 +78,13 @@ def add_apt_cleanup(lines):
 
 def add_nonroot_user(lines):
     """Insert a non-root `USER` before ENTRYPOINT/CMD when none is set."""
-    has_user = any(re.match(r"^USER\s+", ln, re.I) for ln in lines)
+    has_user = any(re.match(r"^USER\s+", ln, re.IGNORECASE) for ln in lines)
     if has_user:
         return lines
     # insert before the final ENTRYPOINT/CMD block
     idx = len(lines)
     for i in range(len(lines) - 1, -1, -1):
-        if re.match(r"^(ENTRYPOINT|CMD)\b", lines[i], re.I):
+        if re.match(r"^(ENTRYPOINT|CMD)\b", lines[i], re.IGNORECASE):
             idx = i
     lines = (
         lines[:idx]
@@ -105,17 +98,14 @@ def add_nonroot_user(lines):
     return lines
 
 
-_READONLY_HINT = (
-    "# hardener: run this image with `docker run --read-only` for a "
-    "read-only rootfs\n"
-)
+_READONLY_HINT = "# hardener: run this image with `docker run --read-only` for a read-only rootfs\n"
 
 
 def copy_chown(lines):
     """Add COPY --chown once a non-root USER is set, and hint at a read-only rootfs."""
     user, user_idx = None, None
     for i, ln in enumerate(lines):
-        m = re.match(r"^USER\s+(\S+)", ln, re.I)
+        m = re.match(r"^USER\s+(\S+)", ln, re.IGNORECASE)
         if m:
             user, user_idx = m.group(1), i
     if user is None:
@@ -139,9 +129,9 @@ def copy_chown(lines):
 
 def add_healthcheck_hint(lines):
     """Suggest a HEALTHCHECK when the image EXPOSEs a port but has none."""
-    if any(re.match(r"^HEALTHCHECK\b", ln, re.I) for ln in lines):
+    if any(re.match(r"^HEALTHCHECK\b", ln, re.IGNORECASE) for ln in lines):
         return lines
-    if any(re.match(r"^EXPOSE\b", ln, re.I) for ln in lines):
+    if any(re.match(r"^EXPOSE\b", ln, re.IGNORECASE) for ln in lines):
         lines.append("# TODO(hardener): add a HEALTHCHECK for the exposed port, e.g.\n")
         lines.append(
             "# HEALTHCHECK --interval=30s CMD curl -sf http://127.0.0.1:8080/healthz || exit 1\n"
@@ -172,7 +162,7 @@ _MULTI_STAGE_HINT = (
 
 def suggest_multi_stage(lines):
     """Hint at a builder stage when a single-stage build installs build-only tooling."""
-    if sum(1 for ln in lines if re.match(r"^FROM\s+", ln, re.I)) != 1:
+    if sum(1 for ln in lines if re.match(r"^FROM\s+", ln, re.IGNORECASE)) != 1:
         return lines
     if _MULTI_STAGE_HINT in "".join(lines):
         return lines
@@ -241,7 +231,7 @@ def resolve_digest(image, tag, fetch=None):
             headers=headers,
             digest_header=True,
         )
-    except Exception:
+    except Exception:  # noqa: BLE001 — any failure (offline/rate-limit/unknown registry) just skips pinning
         return None
 
 
@@ -260,14 +250,12 @@ def pin_digests(lines, resolver=None):
     out = []
     for line in lines:
         m = re.match(
-            r"^(FROM\s+)([^\s:@]+):([^\s@]+)(\s+AS\s+\w+)?\s*(#.*)?\n?$", line, re.I
+            r"^(FROM\s+)([^\s:@]+):([^\s@]+)(\s+AS\s+\w+)?\s*(#.*)?\n?$", line, re.IGNORECASE
         )
         if m and "@sha256" not in line and m.group(2) != "scratch":
             digest = resolver(m.group(2), m.group(3))
             if digest:
-                out.append(
-                    f"{m.group(1)}{m.group(2)}:{m.group(3)}@{digest}{m.group(4) or ''}\n"
-                )
+                out.append(f"{m.group(1)}{m.group(2)}:{m.group(3)}@{digest}{m.group(4) or ''}\n")
                 note(
                     "pin-digest",
                     f"resolved `{m.group(2)}:{m.group(3)}` to a content digest for "
@@ -288,9 +276,7 @@ def main(argv=None):
     p.add_argument("dockerfile")
     p.add_argument("--write", action="store_true", help="apply changes in place")
     p.add_argument("--explain", action="store_true", help="explain every change")
-    p.add_argument(
-        "--fail-on-changes", action="store_true", help="CI mode: exit 1 if not hardened"
-    )
+    p.add_argument("--fail-on-changes", action="store_true", help="CI mode: exit 1 if not hardened")
     p.add_argument(
         "--pin-digests",
         action="store_true",
