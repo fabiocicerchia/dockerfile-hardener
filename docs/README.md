@@ -1,6 +1,4 @@
 # Documentation
 
-- [Getting Started](getting-started.md) — install and first run.
-- [Architecture](architecture.md) — how the pass pipeline works.
-
-Add pages here as the project grows (per-pass reference, ADRs).
+- [Architecture](architecture.md) — high-level design and components.
+- [Getting Started](getting-started.md) — setup, first run and day-to-day use.
