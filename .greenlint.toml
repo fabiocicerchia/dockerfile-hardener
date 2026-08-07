@@ -1,0 +1,9 @@
+# A Dockerfile-hardening tool's examples are deliberately unhardened: they are
+# the "before" side of every demo, and greenlint reporting them says nothing
+# about this repo. Same reasoning as greenlint's own .greenlint.toml.
+#
+# Globs are matched against the path as given, so they are anchored with `*/`
+# rather than written bare.
+ignore = [
+  "*/examples/*",
+]
