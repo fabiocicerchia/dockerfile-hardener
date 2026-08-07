@@ -1,7 +1,9 @@
-# examples/ holds the deliberately unhardened Dockerfile that this tool's
-# README shows being fixed — a full-fat base image and an apt-get install
-# without --no-install-recommends are the point of the example, not a defect
-# in this repo. The tool's own source is still scanned.
+# A Dockerfile-hardening tool's examples are deliberately unhardened: they are
+# the "before" side of every demo, and greenlint reporting them says nothing
+# about this repo. Same reasoning as greenlint's own .greenlint.toml.
+#
+# Globs are matched against the path as given, so they are anchored with `*/`
+# rather than written bare.
 ignore = [
   "*/examples/*",
 ]
