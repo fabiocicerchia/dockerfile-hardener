@@ -21,4 +21,4 @@ dockerfile-hardener Dockerfile --write          # apply in place
 dockerfile-hardener Dockerfile --fail-on-changes  # CI gate (non-zero if changes)
 ```
 
-See [`examples/basic/`](../examples/basic/README.md) for a runnable example.
+See [`examples/basic/`](https://github.com/fabiocicerchia/dockerfile-hardener/blob/main/examples/basic/README.md) for a runnable example.
