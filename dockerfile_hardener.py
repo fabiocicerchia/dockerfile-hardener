@@ -45,6 +45,26 @@ _BUILD_TIME_PACKAGES = {
     "rustc",
 }
 
+# Dockerfile instructions the passes look for. Every regex in this module lives
+# here; Dockerfile keywords are case-insensitive, so all but _COPY_RE say so.
+_UNTAGGED_FROM_RE = re.compile(r"^(FROM\s+)([^\s:@]+)(\s+AS\s+\w+)?\s*$", re.IGNORECASE)
+_TAGGED_FROM_RE = re.compile(
+    r"^(FROM\s+)([^\s:@]+):([^\s@]+)(\s+AS\s+\w+)?\s*(#.*)?\n?$", re.IGNORECASE
+)
+_FROM_RE = re.compile(r"^FROM\s+", re.IGNORECASE)
+_USER_RE = re.compile(r"^USER\s+", re.IGNORECASE)
+_USER_NAME_RE = re.compile(r"^USER\s+(\S+)", re.IGNORECASE)
+_ENTRYPOINT_OR_CMD_RE = re.compile(r"^(ENTRYPOINT|CMD)\b", re.IGNORECASE)
+_HEALTHCHECK_RE = re.compile(r"^HEALTHCHECK\b", re.IGNORECASE)
+_EXPOSE_RE = re.compile(r"^EXPOSE\b", re.IGNORECASE)
+_COPY_RE = re.compile(r"^COPY\s+(?!--)")
+
+# Package-manager invocations inside RUN lines.
+_APT_INSTALL_RE = re.compile(r"\bapt-get install\b")
+_APK_ADD_RE = re.compile(r"\bapk add\b")
+_PIP_INSTALL_RE = re.compile(r"\bpip install\b")
+_PACKAGE_INSTALL_RE = re.compile(r"\b(?:apt-get|apk)\s+(?:add|install)\b")
+
 # Docker Hub registry v2, the only registry --pin-digests knows how to talk to.
 _DOCKER_AUTH_URL = "https://auth.docker.io/token"
 _DOCKER_AUTH_SERVICE = "registry.docker.io"
@@ -61,7 +81,7 @@ def pin_latest_base(lines):
     """Tag untagged `FROM` base images with `:latest` and flag them to pin."""
     out = []
     for line in lines:
-        m = re.match(r"^(FROM\s+)([^\s:@]+)(\s+AS\s+\w+)?\s*$", line, re.IGNORECASE)
+        m = _UNTAGGED_FROM_RE.match(line)
         if m and "scratch" not in m.group(2):
             keyword, image, stage = m.group(1), m.group(2), m.group(3) or ""
             out.append(f"{keyword}{image}:latest{stage}  # TODO: pin a real version\n")
@@ -79,13 +99,13 @@ def add_no_cache_flags(lines):
     out = []
     for line in lines:
         new = line
-        if re.search(r"\bapt-get install\b", line) and "--no-install-recommends" not in line:
+        if _APT_INSTALL_RE.search(line) and "--no-install-recommends" not in line:
             new = line.replace("apt-get install", "apt-get install --no-install-recommends")
             note("apt-no-recommends", "avoid pulling recommended packages you don't need")
-        if re.search(r"\bapk add\b", line) and "--no-cache" not in line:
+        if _APK_ADD_RE.search(line) and "--no-cache" not in line:
             new = new.replace("apk add", "apk add --no-cache")
             note("apk-no-cache", "skip the apk index cache layer")
-        if re.search(r"\bpip install\b", line) and "--no-cache-dir" not in line:
+        if _PIP_INSTALL_RE.search(line) and "--no-cache-dir" not in line:
             new = new.replace("pip install", "pip install --no-cache-dir")
             note("pip-no-cache", "pip's wheel cache is dead weight in an image")
         out.append(new)
@@ -97,7 +117,7 @@ def add_apt_cleanup(lines):
     out = []
     for line in lines:
         if (
-            re.search(r"apt-get install", line)
+            "apt-get install" in line
             and "rm -rf /var/lib/apt/lists" not in line
             and line.rstrip().endswith("\\") is False
         ):
@@ -111,13 +131,13 @@ def add_apt_cleanup(lines):
 
 def add_nonroot_user(lines):
     """Insert a non-root `USER` before ENTRYPOINT/CMD when none is set."""
-    has_user = any(re.match(r"^USER\s+", ln, re.IGNORECASE) for ln in lines)
+    has_user = any(_USER_RE.match(ln) for ln in lines)
     if has_user:
         return lines
     # insert before the final ENTRYPOINT/CMD block
     idx = len(lines)
     for i in range(len(lines) - 1, -1, -1):
-        if re.match(r"^(ENTRYPOINT|CMD)\b", lines[i], re.IGNORECASE):
+        if _ENTRYPOINT_OR_CMD_RE.match(lines[i]):
             idx = i
     lines = (
         lines[:idx]
@@ -135,14 +155,14 @@ def copy_chown(lines):
     """Add COPY --chown once a non-root USER is set, and hint at a read-only rootfs."""
     user, user_idx = None, None
     for i, ln in enumerate(lines):
-        m = re.match(r"^USER\s+(\S+)", ln, re.IGNORECASE)
+        m = _USER_NAME_RE.match(ln)
         if m:
             user, user_idx = m.group(1), i
     if user is None:
         return lines
     out = []
     for i, line in enumerate(lines):
-        if i > user_idx and re.match(r"^COPY\s+(?!--)", line):
+        if i > user_idx and _COPY_RE.match(line):
             prefix, rest = line.split(None, 1)
             out.append(f"{prefix} --chown={user}:{user} {rest}")
             note("copy-chown", f"COPY after USER {user} should own the files it copies")
@@ -159,9 +179,9 @@ def copy_chown(lines):
 
 def add_healthcheck_hint(lines):
     """Suggest a HEALTHCHECK when the image EXPOSEs a port but has none."""
-    if any(re.match(r"^HEALTHCHECK\b", ln, re.IGNORECASE) for ln in lines):
+    if any(_HEALTHCHECK_RE.match(ln) for ln in lines):
         return lines
-    if any(re.match(r"^EXPOSE\b", ln, re.IGNORECASE) for ln in lines):
+    if any(_EXPOSE_RE.match(ln) for ln in lines):
         lines.append(_HEALTHCHECK_HINT)
         note("healthcheck", "images that EXPOSE a port should define a HEALTHCHECK")
     return lines
@@ -169,13 +189,12 @@ def add_healthcheck_hint(lines):
 
 def suggest_multi_stage(lines):
     """Hint at a builder stage when a single-stage build installs build-only tooling."""
-    if sum(1 for ln in lines if re.match(r"^FROM\s+", ln, re.IGNORECASE)) != 1:
+    if sum(1 for ln in lines if _FROM_RE.match(ln)) != 1:
         return lines
     if _MULTI_STAGE_HINT in "".join(lines):
         return lines
     has_build_deps = any(
-        re.search(r"\b(?:apt-get|apk)\s+(?:add|install)\b", ln)
-        and any(pkg in ln for pkg in _BUILD_TIME_PACKAGES)
+        _PACKAGE_INSTALL_RE.search(ln) and any(pkg in ln for pkg in _BUILD_TIME_PACKAGES)
         for ln in lines
     )
     if not has_build_deps:
@@ -253,9 +272,7 @@ def pin_digests(lines, resolver=None):
     resolver = resolver or resolve_digest
     out = []
     for line in lines:
-        m = re.match(
-            r"^(FROM\s+)([^\s:@]+):([^\s@]+)(\s+AS\s+\w+)?\s*(#.*)?\n?$", line, re.IGNORECASE
-        )
+        m = _TAGGED_FROM_RE.match(line)
         if not m or "@sha256" in line or m.group(2) == "scratch":
             out.append(line)
             continue
