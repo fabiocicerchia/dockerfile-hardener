@@ -27,12 +27,14 @@ Why:
   ...
 ```
 
-## Passes (v0.1)
+## Passes
 
 pin untagged bases · `--no-install-recommends` · `apk --no-cache` ·
 `pip --no-cache-dir` · apt list cleanup in-layer · non-root `USER` ·
-HEALTHCHECK hint when a port is exposed. All passes are **idempotent**
-(hardening a hardened file is a no-op — tested).
+`COPY --chown` once a `USER` is set · read-only-rootfs hint · HEALTHCHECK hint
+when a port is exposed · multi-stage hint when a single stage installs build
+tooling. All passes are **idempotent** (hardening a hardened file is a no-op —
+tested).
 
 ## Install
 
@@ -61,6 +63,17 @@ dockerfile-hardener Dockerfile --write        # apply
 dockerfile-hardener Dockerfile --fail-on-changes   # CI gate
 dockerfile-hardener Dockerfile --pin-digests       # resolve FROM tags to a digest (Docker Hub, needs network)
 ```
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| 0 | success — already hardened, or the diff was printed |
+| 1 | `--fail-on-changes` and the file is not hardened yet |
+| 2 | bad command line (argparse) |
+| 66 | the Dockerfile does not exist |
+| 74 | it exists but could not be read |
+| 77 | permission denied |
 
 ## Development
 
