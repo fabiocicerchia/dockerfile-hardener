@@ -63,12 +63,11 @@ def pin_latest_base(lines):
     for line in lines:
         m = re.match(r"^(FROM\s+)([^\s:@]+)(\s+AS\s+\w+)?\s*$", line, re.IGNORECASE)
         if m and "scratch" not in m.group(2):
-            out.append(
-                f"{m.group(1)}{m.group(2)}:latest{m.group(3) or ''}  # TODO: pin a real version\n"
-            )
+            keyword, image, stage = m.group(1), m.group(2), m.group(3) or ""
+            out.append(f"{keyword}{image}:latest{stage}  # TODO: pin a real version\n")
             note(
                 "pin-base",
-                f"base image `{m.group(2)}` had no tag — floating latest breaks reproducibility",
+                f"base image `{image}` had no tag — floating latest breaks reproducibility",
             )
         else:
             out.append(line)
@@ -206,8 +205,8 @@ def harden(text):
     lines = text.splitlines(keepends=True)
     if lines and not lines[-1].endswith("\n"):
         lines[-1] += "\n"
-    for p in PASSES:
-        lines = p(lines)
+    for hardening_pass in PASSES:
+        lines = hardening_pass(lines)
     return "".join(lines), list(CHANGES)
 
 
@@ -258,13 +257,13 @@ def pin_digests(lines, resolver=None):
             r"^(FROM\s+)([^\s:@]+):([^\s@]+)(\s+AS\s+\w+)?\s*(#.*)?\n?$", line, re.IGNORECASE
         )
         if m and "@sha256" not in line and m.group(2) != "scratch":
-            digest = resolver(m.group(2), m.group(3))
+            keyword, image, tag, stage = m.group(1), m.group(2), m.group(3), m.group(4) or ""
+            digest = resolver(image, tag)
             if digest:
-                out.append(f"{m.group(1)}{m.group(2)}:{m.group(3)}@{digest}{m.group(4) or ''}\n")
+                out.append(f"{keyword}{image}:{tag}@{digest}{stage}\n")
                 note(
                     "pin-digest",
-                    f"resolved `{m.group(2)}:{m.group(3)}` to a content digest for "
-                    "reproducible pulls",
+                    f"resolved `{image}:{tag}` to a content digest for reproducible pulls",
                 )
                 continue
         out.append(line)
@@ -273,21 +272,23 @@ def pin_digests(lines, resolver=None):
 
 def main(argv=None):
     """CLI entry point: parse args, harden the file, print diff, optionally write."""
-    p = argparse.ArgumentParser(
+    parser = argparse.ArgumentParser(
         prog="dockerfile-hardener",
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    p.add_argument("dockerfile")
-    p.add_argument("--write", action="store_true", help="apply changes in place")
-    p.add_argument("--explain", action="store_true", help="explain every change")
-    p.add_argument("--fail-on-changes", action="store_true", help="CI mode: exit 1 if not hardened")
-    p.add_argument(
+    parser.add_argument("dockerfile")
+    parser.add_argument("--write", action="store_true", help="apply changes in place")
+    parser.add_argument("--explain", action="store_true", help="explain every change")
+    parser.add_argument(
+        "--fail-on-changes", action="store_true", help="CI mode: exit 1 if not hardened"
+    )
+    parser.add_argument(
         "--pin-digests",
         action="store_true",
         help="resolve FROM tags to a registry digest (Docker Hub only, needs network)",
     )
-    args = p.parse_args(argv)
+    args = parser.parse_args(argv)
 
     with open(args.dockerfile) as fh:
         original = fh.read()
