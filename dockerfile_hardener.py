@@ -256,22 +256,21 @@ def pin_digests(lines, resolver=None):
         m = re.match(
             r"^(FROM\s+)([^\s:@]+):([^\s@]+)(\s+AS\s+\w+)?\s*(#.*)?\n?$", line, re.IGNORECASE
         )
-        if m and "@sha256" not in line and m.group(2) != "scratch":
-            keyword, image, tag, stage = m.group(1), m.group(2), m.group(3), m.group(4) or ""
-            digest = resolver(image, tag)
-            if digest:
-                out.append(f"{keyword}{image}:{tag}@{digest}{stage}\n")
-                note(
-                    "pin-digest",
-                    f"resolved `{image}:{tag}` to a content digest for reproducible pulls",
-                )
-                continue
-        out.append(line)
+        if not m or "@sha256" in line or m.group(2) == "scratch":
+            out.append(line)
+            continue
+        keyword, image, tag, stage = m.group(1), m.group(2), m.group(3), m.group(4) or ""
+        digest = resolver(image, tag)
+        if not digest:
+            out.append(line)
+            continue
+        out.append(f"{keyword}{image}:{tag}@{digest}{stage}\n")
+        note("pin-digest", f"resolved `{image}:{tag}` to a content digest for reproducible pulls")
     return out
 
 
-def main(argv=None):
-    """CLI entry point: parse args, harden the file, print diff, optionally write."""
+def build_parser():
+    """Build the CLI argument parser."""
     parser = argparse.ArgumentParser(
         prog="dockerfile-hardener",
         description=__doc__,
@@ -288,7 +287,12 @@ def main(argv=None):
         action="store_true",
         help="resolve FROM tags to a registry digest (Docker Hub only, needs network)",
     )
-    args = parser.parse_args(argv)
+    return parser
+
+
+def main(argv=None):
+    """CLI entry point: parse args, harden the file, print diff, optionally write."""
+    args = build_parser().parse_args(argv)
 
     with open(args.dockerfile) as fh:
         original = fh.read()
