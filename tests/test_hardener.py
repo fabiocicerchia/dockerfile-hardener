@@ -1,4 +1,4 @@
-from dockerfile_hardener import harden, pin_digests, resolve_digest
+from dockerfile_hardener import harden, main, pin_digests, resolve_digest
 
 
 def test_pins_untagged_base():
@@ -122,3 +122,15 @@ def test_resolve_digest_uses_injected_fetch():
     digest = resolve_digest("alpine", "3.22", fetch=fake_fetch)
     assert digest == "sha256:" + "c" * 64
     assert any("library/alpine" in u for u in calls)
+
+
+def test_missing_file_exits_ex_noinput(capsys):
+    # 66, not 1: `--fail-on-changes` owns 1, so CI can tell a typo'd path from
+    # an unhardened Dockerfile.
+    assert main(["/nonexistent/Dockerfile"]) == 66
+    assert "No such file" in capsys.readouterr().err
+
+
+def test_unreadable_path_exits_ex_ioerr(tmp_path, capsys):
+    assert main([str(tmp_path)]) == 74
+    assert str(tmp_path) in capsys.readouterr().err

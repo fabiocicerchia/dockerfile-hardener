@@ -17,6 +17,15 @@ import urllib.request
 
 CHANGES: list[tuple[str, str]] = []  # (rule, explanation) collected per run
 
+# Exit codes, sysexits.h style. 1 is the documented --fail-on-changes verdict, so
+# errors never reuse it: a CI gate has to tell "not hardened" from "cannot read".
+EX_OK = 0
+EX_NOT_HARDENED = 1
+EX_NOINPUT = 66
+EX_NOPERM = 77
+EX_IOERR = 74
+_READ_FAILURE_CODES = {FileNotFoundError: EX_NOINPUT, PermissionError: EX_NOPERM}
+
 # Lines the passes insert. Each is matched verbatim to stay idempotent, so the
 # text is a constant rather than a literal repeated at the insertion site.
 _READONLY_HINT = "# hardener: run this image with `docker run --read-only` for a read-only rootfs\n"
@@ -311,8 +320,12 @@ def main(argv=None):
     """CLI entry point: parse args, harden the file, print diff, optionally write."""
     args = build_parser().parse_args(argv)
 
-    with open(args.dockerfile) as fh:
-        original = fh.read()
+    try:
+        with open(args.dockerfile) as fh:
+            original = fh.read()
+    except OSError as err:
+        print(f"dockerfile-hardener: {args.dockerfile}: {err.strerror}", file=sys.stderr)
+        return _READ_FAILURE_CODES.get(type(err), EX_IOERR)
     hardened, changes = harden(original)
 
     if args.pin_digests:
@@ -321,7 +334,7 @@ def main(argv=None):
 
     if hardened == original:
         print("dockerfile-hardener: already hardened, nothing to do")
-        return 0
+        return EX_OK
 
     diff = difflib.unified_diff(
         original.splitlines(keepends=True),
@@ -341,7 +354,7 @@ def main(argv=None):
             fh.write(hardened)
         print(f"\ndockerfile-hardener: wrote {args.dockerfile}")
 
-    return 1 if args.fail_on_changes else 0
+    return EX_NOT_HARDENED if args.fail_on_changes else EX_OK
 
 
 if __name__ == "__main__":
