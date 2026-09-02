@@ -17,6 +17,40 @@ import urllib.request
 
 CHANGES: list[tuple[str, str]] = []  # (rule, explanation) collected per run
 
+# Lines the passes insert. Each is matched verbatim to stay idempotent, so the
+# text is a constant rather than a literal repeated at the insertion site.
+_READONLY_HINT = "# hardener: run this image with `docker run --read-only` for a read-only rootfs\n"
+_HEALTHCHECK_HINT = (
+    "# TODO(hardener): add a HEALTHCHECK for the exposed port, e.g.\n"
+    "# HEALTHCHECK --interval=30s CMD curl -sf http://127.0.0.1:8080/healthz || exit 1\n"
+)
+_MULTI_STAGE_HINT = (
+    "# hardener: build tooling detected in a single-stage build — consider a\n"
+    "# multi-stage build (FROM ... AS builder) so build deps don't ship in the\n"
+    "# final image\n"
+)
+
+# Packages that only a compile step needs; seeing them in a single-stage build
+# is the signal for the multi-stage hint.
+_BUILD_TIME_PACKAGES = {
+    "build-essential",
+    "gcc",
+    "g++",
+    "make",
+    "cmake",
+    "python3-dev",
+    "libffi-dev",
+    "musl-dev",
+    "cargo",
+    "rustc",
+}
+
+# Docker Hub registry v2, the only registry --pin-digests knows how to talk to.
+_DOCKER_AUTH_URL = "https://auth.docker.io/token"
+_DOCKER_AUTH_SERVICE = "registry.docker.io"
+_DOCKER_REGISTRY_URL = "https://registry-1.docker.io/v2"
+_MANIFEST_ACCEPT = "application/vnd.docker.distribution.manifest.v2+json"
+
 
 def note(rule, explanation):
     """Record that a rule fired, with a human-readable reason."""
@@ -98,9 +132,6 @@ def add_nonroot_user(lines):
     return lines
 
 
-_READONLY_HINT = "# hardener: run this image with `docker run --read-only` for a read-only rootfs\n"
-
-
 def copy_chown(lines):
     """Add COPY --chown once a non-root USER is set, and hint at a read-only rootfs."""
     user, user_idx = None, None
@@ -132,32 +163,9 @@ def add_healthcheck_hint(lines):
     if any(re.match(r"^HEALTHCHECK\b", ln, re.IGNORECASE) for ln in lines):
         return lines
     if any(re.match(r"^EXPOSE\b", ln, re.IGNORECASE) for ln in lines):
-        lines.append("# TODO(hardener): add a HEALTHCHECK for the exposed port, e.g.\n")
-        lines.append(
-            "# HEALTHCHECK --interval=30s CMD curl -sf http://127.0.0.1:8080/healthz || exit 1\n"
-        )
+        lines.append(_HEALTHCHECK_HINT)
         note("healthcheck", "images that EXPOSE a port should define a HEALTHCHECK")
     return lines
-
-
-_BUILD_TIME_PACKAGES = {
-    "build-essential",
-    "gcc",
-    "g++",
-    "make",
-    "cmake",
-    "python3-dev",
-    "libffi-dev",
-    "musl-dev",
-    "cargo",
-    "rustc",
-}
-
-_MULTI_STAGE_HINT = (
-    "# hardener: build tooling detected in a single-stage build — consider a\n"
-    "# multi-stage build (FROM ... AS builder) so build deps don't ship in the\n"
-    "# final image\n"
-)
 
 
 def suggest_multi_stage(lines):
@@ -217,17 +225,14 @@ def resolve_digest(image, tag, fetch=None):
     fetch = fetch or _http_get
     try:
         token = json.loads(
-            fetch(
-                "https://auth.docker.io/token"
-                f"?service=registry.docker.io&scope=repository:{repo}:pull"
-            )
+            fetch(f"{_DOCKER_AUTH_URL}?service={_DOCKER_AUTH_SERVICE}&scope=repository:{repo}:pull")
         )["token"]
         headers = {
             "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.docker.distribution.manifest.v2+json",
+            "Accept": _MANIFEST_ACCEPT,
         }
         return fetch(
-            f"https://registry-1.docker.io/v2/{repo}/manifests/{tag}",
+            f"{_DOCKER_REGISTRY_URL}/{repo}/manifests/{tag}",
             headers=headers,
             digest_header=True,
         )
