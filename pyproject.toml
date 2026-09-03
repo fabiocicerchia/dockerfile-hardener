@@ -35,6 +35,12 @@ dockerfile-hardener = "dockerfile_hardener:main"
 [tool.setuptools]
 py-modules = ["dockerfile_hardener"]
 
+[tool.pytest.ini_options]
+# Without this the suite imports dockerfile_hardener from site-packages (pytest
+# does not add the rootdir to sys.path), so `make test` can pass green against
+# an installed wheel while the checkout is broken.
+pythonpath = ["."]
+
 [tool.ruff]
 line-length = 100
 

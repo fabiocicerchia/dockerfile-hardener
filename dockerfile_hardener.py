@@ -17,6 +17,69 @@ import urllib.request
 
 CHANGES: list[tuple[str, str]] = []  # (rule, explanation) collected per run
 
+# Exit codes, sysexits.h style. 1 is the documented --fail-on-changes verdict, so
+# errors never reuse it: a CI gate has to tell "not hardened" from "cannot read".
+EX_OK = 0
+EX_NOT_HARDENED = 1
+EX_NOINPUT = 66
+EX_NOPERM = 77
+EX_IOERR = 74
+_READ_FAILURE_CODES = {FileNotFoundError: EX_NOINPUT, PermissionError: EX_NOPERM}
+
+# Lines the passes insert. Each is matched verbatim to stay idempotent, so the
+# text is a constant rather than a literal repeated at the insertion site.
+_READONLY_HINT = "# hardener: run this image with `docker run --read-only` for a read-only rootfs\n"
+_HEALTHCHECK_HINT = (
+    "# TODO(hardener): add a HEALTHCHECK for the exposed port, e.g.\n"
+    "# HEALTHCHECK --interval=30s CMD curl -sf http://127.0.0.1:8080/healthz || exit 1\n"
+)
+_MULTI_STAGE_HINT = (
+    "# hardener: build tooling detected in a single-stage build — consider a\n"
+    "# multi-stage build (FROM ... AS builder) so build deps don't ship in the\n"
+    "# final image\n"
+)
+
+# Packages that only a compile step needs; seeing them in a single-stage build
+# is the signal for the multi-stage hint.
+_BUILD_TIME_PACKAGES = {
+    "build-essential",
+    "gcc",
+    "g++",
+    "make",
+    "cmake",
+    "python3-dev",
+    "libffi-dev",
+    "musl-dev",
+    "cargo",
+    "rustc",
+}
+
+# Dockerfile instructions the passes look for. Every regex in this module lives
+# here; Dockerfile keywords are case-insensitive, so all but _COPY_RE say so.
+_UNTAGGED_FROM_RE = re.compile(r"^(FROM\s+)([^\s:@]+)(\s+AS\s+\w+)?\s*$", re.IGNORECASE)
+_TAGGED_FROM_RE = re.compile(
+    r"^(FROM\s+)([^\s:@]+):([^\s@]+)(\s+AS\s+\w+)?\s*(#.*)?\n?$", re.IGNORECASE
+)
+_FROM_RE = re.compile(r"^FROM\s+", re.IGNORECASE)
+_USER_RE = re.compile(r"^USER\s+", re.IGNORECASE)
+_USER_NAME_RE = re.compile(r"^USER\s+(\S+)", re.IGNORECASE)
+_ENTRYPOINT_OR_CMD_RE = re.compile(r"^(ENTRYPOINT|CMD)\b", re.IGNORECASE)
+_HEALTHCHECK_RE = re.compile(r"^HEALTHCHECK\b", re.IGNORECASE)
+_EXPOSE_RE = re.compile(r"^EXPOSE\b", re.IGNORECASE)
+_COPY_RE = re.compile(r"^COPY\s+(?!--)")
+
+# Package-manager invocations inside RUN lines.
+_APT_INSTALL_RE = re.compile(r"\bapt-get install\b")
+_APK_ADD_RE = re.compile(r"\bapk add\b")
+_PIP_INSTALL_RE = re.compile(r"\bpip install\b")
+_PACKAGE_INSTALL_RE = re.compile(r"\b(?:apt-get|apk)\s+(?:add|install)\b")
+
+# Docker Hub registry v2, the only registry --pin-digests knows how to talk to.
+_DOCKER_AUTH_URL = "https://auth.docker.io/token"
+_DOCKER_AUTH_SERVICE = "registry.docker.io"
+_DOCKER_REGISTRY_URL = "https://registry-1.docker.io/v2"
+_MANIFEST_ACCEPT = "application/vnd.docker.distribution.manifest.v2+json"
+
 
 def note(rule, explanation):
     """Record that a rule fired, with a human-readable reason."""
@@ -27,14 +90,13 @@ def pin_latest_base(lines):
     """Tag untagged `FROM` base images with `:latest` and flag them to pin."""
     out = []
     for line in lines:
-        m = re.match(r"^(FROM\s+)([^\s:@]+)(\s+AS\s+\w+)?\s*$", line, re.IGNORECASE)
+        m = _UNTAGGED_FROM_RE.match(line)
         if m and "scratch" not in m.group(2):
-            out.append(
-                f"{m.group(1)}{m.group(2)}:latest{m.group(3) or ''}  # TODO: pin a real version\n"
-            )
+            keyword, image, stage = m.group(1), m.group(2), m.group(3) or ""
+            out.append(f"{keyword}{image}:latest{stage}  # TODO: pin a real version\n")
             note(
                 "pin-base",
-                f"base image `{m.group(2)}` had no tag — floating latest breaks reproducibility",
+                f"base image `{image}` had no tag — floating latest breaks reproducibility",
             )
         else:
             out.append(line)
@@ -46,13 +108,13 @@ def add_no_cache_flags(lines):
     out = []
     for line in lines:
         new = line
-        if re.search(r"\bapt-get install\b", line) and "--no-install-recommends" not in line:
+        if _APT_INSTALL_RE.search(line) and "--no-install-recommends" not in line:
             new = line.replace("apt-get install", "apt-get install --no-install-recommends")
             note("apt-no-recommends", "avoid pulling recommended packages you don't need")
-        if re.search(r"\bapk add\b", line) and "--no-cache" not in line:
+        if _APK_ADD_RE.search(line) and "--no-cache" not in line:
             new = new.replace("apk add", "apk add --no-cache")
             note("apk-no-cache", "skip the apk index cache layer")
-        if re.search(r"\bpip install\b", line) and "--no-cache-dir" not in line:
+        if _PIP_INSTALL_RE.search(line) and "--no-cache-dir" not in line:
             new = new.replace("pip install", "pip install --no-cache-dir")
             note("pip-no-cache", "pip's wheel cache is dead weight in an image")
         out.append(new)
@@ -64,7 +126,7 @@ def add_apt_cleanup(lines):
     out = []
     for line in lines:
         if (
-            re.search(r"apt-get install", line)
+            "apt-get install" in line
             and "rm -rf /var/lib/apt/lists" not in line
             and line.rstrip().endswith("\\") is False
         ):
@@ -78,13 +140,13 @@ def add_apt_cleanup(lines):
 
 def add_nonroot_user(lines):
     """Insert a non-root `USER` before ENTRYPOINT/CMD when none is set."""
-    has_user = any(re.match(r"^USER\s+", ln, re.IGNORECASE) for ln in lines)
+    has_user = any(_USER_RE.match(ln) for ln in lines)
     if has_user:
         return lines
     # insert before the final ENTRYPOINT/CMD block
     idx = len(lines)
     for i in range(len(lines) - 1, -1, -1):
-        if re.match(r"^(ENTRYPOINT|CMD)\b", lines[i], re.IGNORECASE):
+        if _ENTRYPOINT_OR_CMD_RE.match(lines[i]):
             idx = i
     lines = (
         lines[:idx]
@@ -98,21 +160,18 @@ def add_nonroot_user(lines):
     return lines
 
 
-_READONLY_HINT = "# hardener: run this image with `docker run --read-only` for a read-only rootfs\n"
-
-
 def copy_chown(lines):
     """Add COPY --chown once a non-root USER is set, and hint at a read-only rootfs."""
     user, user_idx = None, None
     for i, ln in enumerate(lines):
-        m = re.match(r"^USER\s+(\S+)", ln, re.IGNORECASE)
+        m = _USER_NAME_RE.match(ln)
         if m:
             user, user_idx = m.group(1), i
     if user is None:
         return lines
     out = []
     for i, line in enumerate(lines):
-        if i > user_idx and re.match(r"^COPY\s+(?!--)", line):
+        if i > user_idx and _COPY_RE.match(line):
             prefix, rest = line.split(None, 1)
             out.append(f"{prefix} --chown={user}:{user} {rest}")
             note("copy-chown", f"COPY after USER {user} should own the files it copies")
@@ -129,46 +188,22 @@ def copy_chown(lines):
 
 def add_healthcheck_hint(lines):
     """Suggest a HEALTHCHECK when the image EXPOSEs a port but has none."""
-    if any(re.match(r"^HEALTHCHECK\b", ln, re.IGNORECASE) for ln in lines):
+    if any(_HEALTHCHECK_RE.match(ln) for ln in lines):
         return lines
-    if any(re.match(r"^EXPOSE\b", ln, re.IGNORECASE) for ln in lines):
-        lines.append("# TODO(hardener): add a HEALTHCHECK for the exposed port, e.g.\n")
-        lines.append(
-            "# HEALTHCHECK --interval=30s CMD curl -sf http://127.0.0.1:8080/healthz || exit 1\n"
-        )
+    if any(_EXPOSE_RE.match(ln) for ln in lines):
+        lines.append(_HEALTHCHECK_HINT)
         note("healthcheck", "images that EXPOSE a port should define a HEALTHCHECK")
     return lines
 
 
-_BUILD_TIME_PACKAGES = {
-    "build-essential",
-    "gcc",
-    "g++",
-    "make",
-    "cmake",
-    "python3-dev",
-    "libffi-dev",
-    "musl-dev",
-    "cargo",
-    "rustc",
-}
-
-_MULTI_STAGE_HINT = (
-    "# hardener: build tooling detected in a single-stage build — consider a\n"
-    "# multi-stage build (FROM ... AS builder) so build deps don't ship in the\n"
-    "# final image\n"
-)
-
-
 def suggest_multi_stage(lines):
     """Hint at a builder stage when a single-stage build installs build-only tooling."""
-    if sum(1 for ln in lines if re.match(r"^FROM\s+", ln, re.IGNORECASE)) != 1:
+    if sum(1 for ln in lines if _FROM_RE.match(ln)) != 1:
         return lines
     if _MULTI_STAGE_HINT in "".join(lines):
         return lines
     has_build_deps = any(
-        re.search(r"\b(?:apt-get|apk)\s+(?:add|install)\b", ln)
-        and any(pkg in ln for pkg in _BUILD_TIME_PACKAGES)
+        _PACKAGE_INSTALL_RE.search(ln) and any(pkg in ln for pkg in _BUILD_TIME_PACKAGES)
         for ln in lines
     )
     if not has_build_deps:
@@ -198,8 +233,8 @@ def harden(text):
     lines = text.splitlines(keepends=True)
     if lines and not lines[-1].endswith("\n"):
         lines[-1] += "\n"
-    for p in PASSES:
-        lines = p(lines)
+    for hardening_pass in PASSES:
+        lines = hardening_pass(lines)
     return "".join(lines), list(CHANGES)
 
 
@@ -217,17 +252,14 @@ def resolve_digest(image, tag, fetch=None):
     fetch = fetch or _http_get
     try:
         token = json.loads(
-            fetch(
-                "https://auth.docker.io/token"
-                f"?service=registry.docker.io&scope=repository:{repo}:pull"
-            )
+            fetch(f"{_DOCKER_AUTH_URL}?service={_DOCKER_AUTH_SERVICE}&scope=repository:{repo}:pull")
         )["token"]
         headers = {
             "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.docker.distribution.manifest.v2+json",
+            "Accept": _MANIFEST_ACCEPT,
         }
         return fetch(
-            f"https://registry-1.docker.io/v2/{repo}/manifests/{tag}",
+            f"{_DOCKER_REGISTRY_URL}/{repo}/manifests/{tag}",
             headers=headers,
             digest_header=True,
         )
@@ -249,43 +281,51 @@ def pin_digests(lines, resolver=None):
     resolver = resolver or resolve_digest
     out = []
     for line in lines:
-        m = re.match(
-            r"^(FROM\s+)([^\s:@]+):([^\s@]+)(\s+AS\s+\w+)?\s*(#.*)?\n?$", line, re.IGNORECASE
-        )
-        if m and "@sha256" not in line and m.group(2) != "scratch":
-            digest = resolver(m.group(2), m.group(3))
-            if digest:
-                out.append(f"{m.group(1)}{m.group(2)}:{m.group(3)}@{digest}{m.group(4) or ''}\n")
-                note(
-                    "pin-digest",
-                    f"resolved `{m.group(2)}:{m.group(3)}` to a content digest for "
-                    "reproducible pulls",
-                )
-                continue
-        out.append(line)
+        m = _TAGGED_FROM_RE.match(line)
+        if not m or "@sha256" in line or m.group(2) == "scratch":
+            out.append(line)
+            continue
+        keyword, image, tag, stage = m.group(1), m.group(2), m.group(3), m.group(4) or ""
+        digest = resolver(image, tag)
+        if not digest:
+            out.append(line)
+            continue
+        out.append(f"{keyword}{image}:{tag}@{digest}{stage}\n")
+        note("pin-digest", f"resolved `{image}:{tag}` to a content digest for reproducible pulls")
     return out
 
 
-def main(argv=None):
-    """CLI entry point: parse args, harden the file, print diff, optionally write."""
-    p = argparse.ArgumentParser(
+def build_parser():
+    """Build the CLI argument parser."""
+    parser = argparse.ArgumentParser(
         prog="dockerfile-hardener",
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    p.add_argument("dockerfile")
-    p.add_argument("--write", action="store_true", help="apply changes in place")
-    p.add_argument("--explain", action="store_true", help="explain every change")
-    p.add_argument("--fail-on-changes", action="store_true", help="CI mode: exit 1 if not hardened")
-    p.add_argument(
+    parser.add_argument("dockerfile")
+    parser.add_argument("--write", action="store_true", help="apply changes in place")
+    parser.add_argument("--explain", action="store_true", help="explain every change")
+    parser.add_argument(
+        "--fail-on-changes", action="store_true", help="CI mode: exit 1 if not hardened"
+    )
+    parser.add_argument(
         "--pin-digests",
         action="store_true",
         help="resolve FROM tags to a registry digest (Docker Hub only, needs network)",
     )
-    args = p.parse_args(argv)
+    return parser
 
-    with open(args.dockerfile) as fh:
-        original = fh.read()
+
+def main(argv=None):
+    """CLI entry point: parse args, harden the file, print diff, optionally write."""
+    args = build_parser().parse_args(argv)
+
+    try:
+        with open(args.dockerfile) as fh:
+            original = fh.read()
+    except OSError as err:
+        print(f"dockerfile-hardener: {args.dockerfile}: {err.strerror}", file=sys.stderr)
+        return _READ_FAILURE_CODES.get(type(err), EX_IOERR)
     hardened, changes = harden(original)
 
     if args.pin_digests:
@@ -294,7 +334,7 @@ def main(argv=None):
 
     if hardened == original:
         print("dockerfile-hardener: already hardened, nothing to do")
-        return 0
+        return EX_OK
 
     diff = difflib.unified_diff(
         original.splitlines(keepends=True),
@@ -314,7 +354,7 @@ def main(argv=None):
             fh.write(hardened)
         print(f"\ndockerfile-hardener: wrote {args.dockerfile}")
 
-    return 1 if args.fail_on_changes else 0
+    return EX_NOT_HARDENED if args.fail_on_changes else EX_OK
 
 
 if __name__ == "__main__":
