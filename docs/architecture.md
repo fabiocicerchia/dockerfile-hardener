@@ -29,7 +29,7 @@ prints a unified diff between the original and the hardened result.
 
 ## Data flow
 
-```
+```text
 Dockerfile ──► splitlines ──► pass 1 ──► pass 2 ──► … ──► join ──► unified diff
 ```
 
