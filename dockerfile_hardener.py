@@ -16,6 +16,7 @@ import sys
 import urllib.request
 from collections.abc import Callable
 from pathlib import Path
+from typing import Protocol
 
 CHANGES: list[tuple[str, str]] = []  # (rule, explanation) collected per run
 
@@ -26,7 +27,12 @@ EX_NOT_HARDENED = 1
 EX_NOINPUT = 66
 EX_NOPERM = 77
 EX_IOERR = 74
-_READ_FAILURE_CODES = {FileNotFoundError: EX_NOINPUT, PermissionError: EX_NOPERM}
+# Keyed by the OSError subclasses this tool distinguishes; anything else
+# falls through to EX_IOERR, so the annotation is the wider type on purpose.
+_READ_FAILURE_CODES: dict[type[OSError], int] = {
+    FileNotFoundError: EX_NOINPUT,
+    PermissionError: EX_NOPERM,
+}
 
 # Lines the passes insert. Each is matched verbatim to stay idempotent, so the
 # text is a constant rather than a literal repeated at the insertion site.
@@ -80,9 +86,20 @@ _DOCKER_AUTH_SERVICE = "registry.docker.io"
 _HTTP_TIMEOUT_SECONDS = 10
 _DOCKER_REGISTRY_URL = "https://registry-1.docker.io/v2"
 
+
 # The two seams the tests swap out. Named so the signatures below say what they
 # take rather than `Callable[..., Any]`.
-Fetcher = Callable[..., str | None]
+class Fetcher(Protocol):
+    """One HTTP GET, as this tool needs it: the body, or None when it failed.
+
+    A Protocol rather than `Callable[..., str | None]`: the ellipsis form says
+    nothing about the arguments, so a fake with the wrong signature type-checks
+    and then fails at run time.
+    """
+
+    def __call__(self, url: str, headers: dict[str, str] | None = None, digest_header: bool = False) -> str | None: ...
+
+
 Resolver = Callable[[str, str], str | None]
 _MANIFEST_ACCEPT = "application/vnd.docker.distribution.manifest.v2+json"
 
@@ -94,7 +111,7 @@ def note(rule: str, explanation: str) -> None:
 
 def pin_latest_base(lines: list[str]) -> list[str]:
     """Tag untagged `FROM` base images with `:latest` and flag them to pin."""
-    out = []
+    out: list[str] = []
     for line in lines:
         m = _UNTAGGED_FROM_RE.match(line)
         if m and "scratch" not in m.group(2):
@@ -111,7 +128,7 @@ def pin_latest_base(lines: list[str]) -> list[str]:
 
 def add_no_cache_flags(lines: list[str]) -> list[str]:
     """Add no-cache/no-recommends flags to apt-get, apk, and pip installs."""
-    out = []
+    out: list[str] = []
     for line in lines:
         new = line
         if _APT_INSTALL_RE.search(line) and "--no-install-recommends" not in line:
@@ -129,7 +146,7 @@ def add_no_cache_flags(lines: list[str]) -> list[str]:
 
 def add_apt_cleanup(lines: list[str]) -> list[str]:
     """Append apt list cleanup to single-line apt-get install commands."""
-    out = []
+    out: list[str] = []
     for line in lines:
         if (
             "apt-get install" in line
@@ -164,14 +181,18 @@ def add_nonroot_user(lines: list[str]) -> list[str]:
 
 def copy_chown(lines: list[str]) -> list[str]:
     """Add COPY --chown once a non-root USER is set, and hint at a read-only rootfs."""
-    user, user_idx = None, None
+    # One variable, because the name and the line it was found on are one
+    # fact: guarding the name alone left the index optional for anything that
+    # reads it below.
+    found: tuple[str, int] | None = None
     for i, ln in enumerate(lines):
         m = _USER_NAME_RE.match(ln)
         if m:
-            user, user_idx = m.group(1), i
-    if user is None:
+            found = (m.group(1), i)
+    if found is None:
         return lines
-    out = []
+    user, user_idx = found
+    out: list[str] = []
     for i, line in enumerate(lines):
         if i > user_idx and _COPY_RE.match(line):
             prefix, rest = line.split(None, 1)
@@ -251,9 +272,10 @@ def resolve_digest(image: str, tag: str, fetch: Fetcher | None = None) -> str | 
     repo = image if "/" in image else f"library/{image}"
     fetch = fetch or _http_get
     try:
-        token = json.loads(fetch(f"{_DOCKER_AUTH_URL}?service={_DOCKER_AUTH_SERVICE}&scope=repository:{repo}:pull"))[
-            "token"
-        ]
+        auth = fetch(f"{_DOCKER_AUTH_URL}?service={_DOCKER_AUTH_SERVICE}&scope=repository:{repo}:pull")
+        if auth is None:
+            return None  # offline, rate-limited or refused: skip pinning this line
+        token = json.loads(auth)["token"]
         headers = {
             "Authorization": f"Bearer {token}",
             "Accept": _MANIFEST_ACCEPT,
@@ -282,7 +304,7 @@ def _http_get(url: str, headers: dict[str, str] | None = None, digest_header: bo
 def pin_digests(lines: list[str], resolver: Resolver | None = None) -> list[str]:
     """`--pin-digests`: resolve each FROM tag to a digest via a registry client."""
     resolver = resolver or resolve_digest
-    out = []
+    out: list[str] = []
     for line in lines:
         m = _TAGGED_FROM_RE.match(line)
         if not m or "@sha256" in line or m.group(2) == "scratch":
