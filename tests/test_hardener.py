@@ -104,16 +104,20 @@ def test_pin_digests_skips_scratch_and_already_pinned() -> None:
 
 
 def test_resolve_digest_returns_none_for_qualified_registry() -> None:
-    assert resolve_digest("ghcr.io/foo/bar", "latest", fetch=lambda *a, **k: "x") is None
+    def unused_fetch(url: str, headers: dict[str, str] | None = None, digest_header: bool = False) -> str:
+        raise AssertionError(f"a qualified registry must not be fetched: {url}")
+
+    assert resolve_digest("ghcr.io/foo/bar", "latest", fetch=unused_fetch) is None
 
 
 def test_resolve_digest_uses_injected_fetch() -> None:
-    calls = []
+    calls: list[str] = []
 
-    def fake_fetch(url, headers=None, digest_header=False) -> str:
+    def fake_fetch(url: str, headers: dict[str, str] | None = None, digest_header: bool = False) -> str:
         calls.append(url)
         if "auth.docker.io" in url:
             return '{"token": "t"}'
+        assert headers is not None
         assert headers["Authorization"] == "Bearer t"
         assert digest_header
         return "sha256:" + "c" * 64
