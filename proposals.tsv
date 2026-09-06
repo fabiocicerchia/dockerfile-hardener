@@ -1,0 +1,8 @@
+dockerfile_hardener.py	82	10	arg	rule	str
+dockerfile_hardener.py	82	16	arg	explanation	str
+dockerfile_hardener.py	183	26	arg	lines	list
+dockerfile_hardener.py	222	12	arg	text	str
+dockerfile_hardener.py	222	0	ret	harden	tuple
+dockerfile_hardener.py	233	20	arg	image	str
+dockerfile_hardener.py	233	27	arg	tag	str
+dockerfile_hardener.py	262	34	arg	digest_header	bool

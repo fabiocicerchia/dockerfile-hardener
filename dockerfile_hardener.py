@@ -14,6 +14,8 @@ import json
 import re
 import sys
 import urllib.request
+from collections.abc import Callable
+from pathlib import Path
 
 CHANGES: list[tuple[str, str]] = []  # (rule, explanation) collected per run
 
@@ -57,9 +59,7 @@ _BUILD_TIME_PACKAGES = {
 # Dockerfile instructions the passes look for. Every regex in this module lives
 # here; Dockerfile keywords are case-insensitive, so all but _COPY_RE say so.
 _UNTAGGED_FROM_RE = re.compile(r"^(FROM\s+)([^\s:@]+)(\s+AS\s+\w+)?\s*$", re.IGNORECASE)
-_TAGGED_FROM_RE = re.compile(
-    r"^(FROM\s+)([^\s:@]+):([^\s@]+)(\s+AS\s+\w+)?\s*(#.*)?\n?$", re.IGNORECASE
-)
+_TAGGED_FROM_RE = re.compile(r"^(FROM\s+)([^\s:@]+):([^\s@]+)(\s+AS\s+\w+)?\s*(#.*)?\n?$", re.IGNORECASE)
 _FROM_RE = re.compile(r"^FROM\s+", re.IGNORECASE)
 _USER_RE = re.compile(r"^USER\s+", re.IGNORECASE)
 _USER_NAME_RE = re.compile(r"^USER\s+(\S+)", re.IGNORECASE)
@@ -77,16 +77,22 @@ _PACKAGE_INSTALL_RE = re.compile(r"\b(?:apt-get|apk)\s+(?:add|install)\b")
 # Docker Hub registry v2, the only registry --pin-digests knows how to talk to.
 _DOCKER_AUTH_URL = "https://auth.docker.io/token"
 _DOCKER_AUTH_SERVICE = "registry.docker.io"
+_HTTP_TIMEOUT_SECONDS = 10
 _DOCKER_REGISTRY_URL = "https://registry-1.docker.io/v2"
+
+# The two seams the tests swap out. Named so the signatures below say what they
+# take rather than `Callable[..., Any]`.
+Fetcher = Callable[..., str | None]
+Resolver = Callable[[str, str], str | None]
 _MANIFEST_ACCEPT = "application/vnd.docker.distribution.manifest.v2+json"
 
 
-def note(rule, explanation):
+def note(rule: str, explanation: str) -> None:
     """Record that a rule fired, with a human-readable reason."""
     CHANGES.append((rule, explanation))
 
 
-def pin_latest_base(lines):
+def pin_latest_base(lines: list[str]) -> list[str]:
     """Tag untagged `FROM` base images with `:latest` and flag them to pin."""
     out = []
     for line in lines:
@@ -103,7 +109,7 @@ def pin_latest_base(lines):
     return out
 
 
-def add_no_cache_flags(lines):
+def add_no_cache_flags(lines: list[str]) -> list[str]:
     """Add no-cache/no-recommends flags to apt-get, apk, and pip installs."""
     out = []
     for line in lines:
@@ -121,7 +127,7 @@ def add_no_cache_flags(lines):
     return out
 
 
-def add_apt_cleanup(lines):
+def add_apt_cleanup(lines: list[str]) -> list[str]:
     """Append apt list cleanup to single-line apt-get install commands."""
     out = []
     for line in lines:
@@ -138,7 +144,7 @@ def add_apt_cleanup(lines):
     return out
 
 
-def add_nonroot_user(lines):
+def add_nonroot_user(lines: list[str]) -> list[str]:
     """Insert a non-root `USER` before ENTRYPOINT/CMD when none is set."""
     has_user = any(_USER_RE.match(ln) for ln in lines)
     if has_user:
@@ -148,11 +154,7 @@ def add_nonroot_user(lines):
     for i in range(len(lines) - 1, -1, -1):
         if _ENTRYPOINT_OR_CMD_RE.match(lines[i]):
             idx = i
-    lines = (
-        lines[:idx]
-        + ["USER 10001  # TODO: create this user in an earlier layer if needed\n"]
-        + lines[idx:]
-    )
+    lines = [*lines[:idx], "USER 10001  # TODO: create this user in an earlier layer if needed\n", *lines[idx:]]
     note(
         "non-root",
         "containers should not run as root; added USER before ENTRYPOINT/CMD",
@@ -160,7 +162,7 @@ def add_nonroot_user(lines):
     return lines
 
 
-def copy_chown(lines):
+def copy_chown(lines: list[str]) -> list[str]:
     """Add COPY --chown once a non-root USER is set, and hint at a read-only rootfs."""
     user, user_idx = None, None
     for i, ln in enumerate(lines):
@@ -178,7 +180,7 @@ def copy_chown(lines):
         else:
             out.append(line)
     if _READONLY_HINT not in out:
-        out = out[: user_idx + 1] + [_READONLY_HINT] + out[user_idx + 1 :]
+        out = [*out[: user_idx + 1], _READONLY_HINT, *out[user_idx + 1 :]]
         note(
             "read-only-rootfs",
             "non-root images are good read-only-rootfs candidates too",
@@ -186,7 +188,7 @@ def copy_chown(lines):
     return out
 
 
-def add_healthcheck_hint(lines):
+def add_healthcheck_hint(lines: list[str]) -> list[str]:
     """Suggest a HEALTHCHECK when the image EXPOSEs a port but has none."""
     if any(_HEALTHCHECK_RE.match(ln) for ln in lines):
         return lines
@@ -196,24 +198,22 @@ def add_healthcheck_hint(lines):
     return lines
 
 
-def suggest_multi_stage(lines):
+def suggest_multi_stage(lines: list[str]) -> list[str]:
     """Hint at a builder stage when a single-stage build installs build-only tooling."""
     if sum(1 for ln in lines if _FROM_RE.match(ln)) != 1:
         return lines
     if _MULTI_STAGE_HINT in "".join(lines):
         return lines
     has_build_deps = any(
-        _PACKAGE_INSTALL_RE.search(ln) and any(pkg in ln for pkg in _BUILD_TIME_PACKAGES)
-        for ln in lines
+        _PACKAGE_INSTALL_RE.search(ln) and any(pkg in ln for pkg in _BUILD_TIME_PACKAGES) for ln in lines
     )
     if not has_build_deps:
         return lines
     note(
         "multi-stage",
-        "single-stage build installs compiler/build tooling that could live in a "
-        "discarded builder stage",
+        "single-stage build installs compiler/build tooling that could live in a discarded builder stage",
     )
-    return lines + [_MULTI_STAGE_HINT]
+    return [*lines, _MULTI_STAGE_HINT]
 
 
 PASSES = [
@@ -227,7 +227,7 @@ PASSES = [
 ]
 
 
-def harden(text):
+def harden(text: str) -> tuple[str, list[tuple[str, str]]]:
     """Run every hardening pass over `text`; return (hardened_text, changes)."""
     CHANGES.clear()
     lines = text.splitlines(keepends=True)
@@ -238,7 +238,7 @@ def harden(text):
     return "".join(lines), list(CHANGES)
 
 
-def resolve_digest(image, tag, fetch=None):
+def resolve_digest(image: str, tag: str, fetch: Fetcher | None = None) -> str | None:
     """Resolve `image:tag` to a `sha256:...` content digest via the registry API.
 
     Only handles Docker Hub (unqualified images like `ubuntu` or `library/ubuntu`)
@@ -246,14 +246,14 @@ def resolve_digest(image, tag, fetch=None):
     at registry-specific auth. Returns None on any failure (offline, rate limit,
     unknown registry) so callers can just skip pinning that line.
     """
-    if "/" in image and ("." in image.split("/")[0] or ":" in image.split("/")[0]):
+    if "/" in image and ("." in image.split("/", maxsplit=1)[0] or ":" in image.split("/", maxsplit=1)[0]):
         return None  # explicit registry host — not Docker Hub, skip
     repo = image if "/" in image else f"library/{image}"
     fetch = fetch or _http_get
     try:
-        token = json.loads(
-            fetch(f"{_DOCKER_AUTH_URL}?service={_DOCKER_AUTH_SERVICE}&scope=repository:{repo}:pull")
-        )["token"]
+        token = json.loads(fetch(f"{_DOCKER_AUTH_URL}?service={_DOCKER_AUTH_SERVICE}&scope=repository:{repo}:pull"))[
+            "token"
+        ]
         headers = {
             "Authorization": f"Bearer {token}",
             "Accept": _MANIFEST_ACCEPT,
@@ -263,20 +263,23 @@ def resolve_digest(image, tag, fetch=None):
             headers=headers,
             digest_header=True,
         )
-    except Exception:  # noqa: BLE001 — any failure (offline/rate-limit/unknown registry) just skips pinning
+    except Exception:
         return None
 
 
-def _http_get(url, headers=None, digest_header=False):
+def _http_get(url: str, headers: dict[str, str] | None = None, digest_header: bool = False) -> str | None:
     """Real network fetch for resolve_digest; swapped out in tests."""
-    req = urllib.request.Request(url, headers=headers or {})
-    with urllib.request.urlopen(req, timeout=10) as resp:
+    if not url.startswith("https://"):
+        msg = f"refusing to fetch a non-https URL: {url}"
+        raise ValueError(msg)
+    req = urllib.request.Request(url, headers=headers or {})  # noqa: S310 — scheme checked above
+    with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT_SECONDS) as resp:  # noqa: S310 — as above
         if digest_header:
             return resp.headers.get("Docker-Content-Digest")
         return resp.read().decode()
 
 
-def pin_digests(lines, resolver=None):
+def pin_digests(lines: list[str], resolver: Resolver | None = None) -> list[str]:
     """`--pin-digests`: resolve each FROM tag to a digest via a registry client."""
     resolver = resolver or resolve_digest
     out = []
@@ -295,7 +298,7 @@ def pin_digests(lines, resolver=None):
     return out
 
 
-def build_parser():
+def build_parser() -> argparse.ArgumentParser:
     """Build the CLI argument parser."""
     parser = argparse.ArgumentParser(
         prog="dockerfile-hardener",
@@ -305,9 +308,7 @@ def build_parser():
     parser.add_argument("dockerfile")
     parser.add_argument("--write", action="store_true", help="apply changes in place")
     parser.add_argument("--explain", action="store_true", help="explain every change")
-    parser.add_argument(
-        "--fail-on-changes", action="store_true", help="CI mode: exit 1 if not hardened"
-    )
+    parser.add_argument("--fail-on-changes", action="store_true", help="CI mode: exit 1 if not hardened")
     parser.add_argument(
         "--pin-digests",
         action="store_true",
@@ -316,15 +317,15 @@ def build_parser():
     return parser
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     """CLI entry point: parse args, harden the file, print diff, optionally write."""
     args = build_parser().parse_args(argv)
 
     try:
-        with open(args.dockerfile) as fh:
-            original = fh.read()
+        original = Path(args.dockerfile).read_text()
     except OSError as err:
-        print(f"dockerfile-hardener: {args.dockerfile}: {err.strerror}", file=sys.stderr)
+        # The tool's own output
+        print(f"dockerfile-hardener: {args.dockerfile}: {err.strerror}", file=sys.stderr)  # noqa: T201
         return _READ_FAILURE_CODES.get(type(err), EX_IOERR)
     hardened, changes = harden(original)
 
@@ -333,7 +334,7 @@ def main(argv=None):
         changes = list(CHANGES)
 
     if hardened == original:
-        print("dockerfile-hardener: already hardened, nothing to do")
+        print("dockerfile-hardener: already hardened, nothing to do")  # noqa: T201 — the tool's own output
         return EX_OK
 
     diff = difflib.unified_diff(
@@ -345,14 +346,13 @@ def main(argv=None):
     sys.stdout.writelines(diff)
 
     if args.explain:
-        print("\nWhy:")
+        print("\nWhy:")  # noqa: T201 — the tool's own output
         for rule, why in dict(changes).items():
-            print(f"  [{rule}] {why}")
+            print(f"  [{rule}] {why}")  # noqa: T201 — the tool's own output
 
     if args.write:
-        with open(args.dockerfile, "w") as fh:
-            fh.write(hardened)
-        print(f"\ndockerfile-hardener: wrote {args.dockerfile}")
+        Path(args.dockerfile).write_text(hardened)
+        print(f"\ndockerfile-hardener: wrote {args.dockerfile}")  # noqa: T201 — the tool's own output
 
     return EX_NOT_HARDENED if args.fail_on_changes else EX_OK
 
