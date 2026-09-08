@@ -213,9 +213,14 @@ def add_healthcheck_hint(lines: list[str]) -> list[str]:
     """Suggest a HEALTHCHECK when the image EXPOSEs a port but has none."""
     if any(_HEALTHCHECK_RE.match(ln) for ln in lines):
         return lines
+    # The hint is a comment, so _HEALTHCHECK_RE never matches it back: without
+    # this the pass re-appends itself on every run and --fail-on-changes never
+    # goes green for an image that EXPOSEs a port.
+    if _HEALTHCHECK_HINT in "".join(lines):
+        return lines
     if any(_EXPOSE_RE.match(ln) for ln in lines):
-        lines.append(_HEALTHCHECK_HINT)
         note("healthcheck", "images that EXPOSE a port should define a HEALTHCHECK")
+        return [*lines, _HEALTHCHECK_HINT]
     return lines
 
 
