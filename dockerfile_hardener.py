@@ -41,6 +41,12 @@ _HEALTHCHECK_HINT = (
     "# TODO(hardener): add a HEALTHCHECK for the exposed port, e.g.\n"
     "# HEALTHCHECK --interval=30s CMD curl -sf http://127.0.0.1:8080/healthz || exit 1\n"
 )
+_PIN_BASE_HINT = "  # TODO(hardener): floating tag — pin to a digest (--pin-digests)"
+_LEAKY_ARG_HINT = (
+    "# hardener: a build arg or ENV with a default value is readable from the\n"
+    "# published image with `docker history` — pass credentials with\n"
+    "# `RUN --mount=type=secret` instead, and never give them a default here\n"
+)
 _MULTI_STAGE_HINT = (
     "# hardener: build tooling detected in a single-stage build — consider a\n"
     "# multi-stage build (FROM ... AS builder) so build deps don't ship in the\n"
@@ -73,6 +79,14 @@ _ENTRYPOINT_OR_CMD_RE = re.compile(r"^(ENTRYPOINT|CMD)\b", re.IGNORECASE)
 _HEALTHCHECK_RE = re.compile(r"^HEALTHCHECK\b", re.IGNORECASE)
 _EXPOSE_RE = re.compile(r"^EXPOSE\b", re.IGNORECASE)
 _COPY_RE = re.compile(r"^COPY\s+(?!--)")
+# A build arg or ENV whose *name* says credential, carrying a default value.
+# The name is the signal: the value is usually a placeholder in the file and the
+# real one arrives via --build-arg, which is exactly the case `docker history`
+# exposes.
+_SECRET_ARG_RE = re.compile(
+    r"^(?:ARG|ENV)\s+(\w*(?:TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIALS?|APIKEY|API_KEY|_KEY))\s*=\s*\S",
+    re.IGNORECASE,
+)
 
 # Package-manager invocations inside RUN lines.
 _APT_INSTALL_RE = re.compile(r"\bapt-get install\b")
@@ -124,6 +138,52 @@ def pin_latest_base(lines: list[str]) -> list[str]:
         else:
             out.append(line)
     return out
+
+
+def flag_floating_base(lines: list[str]) -> list[str]:
+    """Flag a `FROM` that carries a tag but no digest.
+
+    `FROM node:18` is reproducible only for as long as nobody re-pushes the tag,
+    which is not a property anyone controls. Resolving it needs a registry
+    lookup, so the default is to say so and point at `--pin-digests`, which does
+    the resolution — the alternative is a rewrite that requires the network to
+    produce a diff at all.
+    """
+    out: list[str] = []
+    for line in lines:
+        m = _TAGGED_FROM_RE.match(line)
+        if not m or "@sha256" in line or m.group(2) == "scratch":
+            out.append(line)
+            continue
+        image, tag, comment = m.group(2), m.group(3), m.group(5)
+        # A line that already carries a comment keeps it: only the note fires,
+        # which is also what makes a second run a no-op.
+        out.append(line if comment else f"{line.rstrip()}{_PIN_BASE_HINT}\n")
+        note(
+            "pin-base",
+            f"`{image}:{tag}` is a floating tag — pin to a digest so a rebuild cannot silently change the base",
+        )
+    return out
+
+
+def flag_build_arg_secrets(lines: list[str]) -> list[str]:
+    """Flag a credential-shaped ARG/ENV that carries a default value.
+
+    `docker history` prints every build argument and every ENV of a published
+    image, so `ARG NPM_TOKEN=…` ships the token to whoever can pull it. There is
+    nothing to rewrite — the fix is a build secret, not a different default — so
+    this leaves a comment above the line and says why.
+    """
+    if any(_SECRET_ARG_RE.match(ln) for ln in lines) and _LEAKY_ARG_HINT not in "".join(lines):
+        out: list[str] = []
+        for line in lines:
+            m = _SECRET_ARG_RE.match(line)
+            if m:
+                out.append(_LEAKY_ARG_HINT)
+                note("build-arg-secret", f"`{m.group(1)}` has a default value that `docker history` will show")
+            out.append(line)
+        return out
+    return lines
 
 
 def add_no_cache_flags(lines: list[str]) -> list[str]:
@@ -211,7 +271,9 @@ def copy_chown(lines: list[str]) -> list[str]:
 
 def add_healthcheck_hint(lines: list[str]) -> list[str]:
     """Suggest a HEALTHCHECK when the image EXPOSEs a port but has none."""
-    if any(_HEALTHCHECK_RE.match(ln) for ln in lines):
+    # The hint itself counts as already-hinted, or every run appends another
+    # copy of it to a file that EXPOSEs a port.
+    if any(_HEALTHCHECK_RE.match(ln) for ln in lines) or _HEALTHCHECK_HINT in "".join(lines):
         return lines
     # The hint is a comment, so _HEALTHCHECK_RE never matches it back: without
     # this the pass re-appends itself on every run and --fail-on-changes never
@@ -244,6 +306,8 @@ def suggest_multi_stage(lines: list[str]) -> list[str]:
 
 PASSES = [
     pin_latest_base,
+    flag_floating_base,
+    flag_build_arg_secrets,
     add_no_cache_flags,
     add_apt_cleanup,
     add_nonroot_user,

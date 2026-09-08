@@ -46,7 +46,10 @@ def test_healthcheck_hint_idempotent() -> None:
 
 
 def test_idempotent() -> None:
-    src = 'FROM alpine:3.22\nRUN apk add curl\nCMD ["app"]\n'
+    # EXPOSE and a credential-shaped ARG are in here because every hint-only
+    # pass has to recognise its own output; without them the healthcheck hint
+    # was appended again on every run.
+    src = 'FROM alpine:3.22\nARG NPM_TOKEN=placeholder\nRUN apk add curl\nEXPOSE 8080\nCMD ["app"]\n'
     once, _ = harden(src)
     twice, _ = harden(once)
     assert once == twice
@@ -144,3 +147,29 @@ def test_missing_file_exits_ex_noinput(capsys: pytest.CaptureFixture[str]) -> No
 def test_unreadable_path_exits_ex_ioerr(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert main([str(tmp_path)]) == 74
     assert str(tmp_path) in capsys.readouterr().err
+
+
+def test_flags_a_floating_tag_and_leaves_a_digest_alone() -> None:
+    out, changes = harden('FROM node:18\nCMD ["app"]\n')
+    assert any(r == "pin-base" for r, _ in changes)
+    assert "--pin-digests" in out
+
+    pinned = "FROM node:18@sha256:" + "0" * 64 + '\nCMD ["app"]\n'
+    _out, changes = harden(pinned)
+    assert not any(r == "pin-base" for r, _ in changes)
+
+
+def test_flags_a_build_arg_secret_in_the_rule_list_not_only_the_diff() -> None:
+    # The diff carries unchanged context lines, so the ARG appears in the output
+    # whether or not the tool has anything to say about it. The rule list is
+    # what proves it was seen.
+    _out, changes = harden('FROM alpine:3.22\nARG NPM_TOKEN=dummy\nCMD ["app"]\n')
+    assert any(r == "build-arg-secret" for r, _ in changes)
+
+    _out, changes = harden('FROM alpine:3.22\nENV DB_PASSWORD=hunter2\nCMD ["app"]\n')
+    assert any(r == "build-arg-secret" for r, _ in changes)
+
+    # A name that only looks credential-shaped to a careless regex, and an ARG
+    # with no default (which is how you are supposed to declare one).
+    _out, changes = harden('FROM alpine:3.22\nARG KEYCLOAK_URL=http://kc\nARG NPM_TOKEN\nCMD ["app"]\n')
+    assert not any(r == "build-arg-secret" for r, _ in changes)
