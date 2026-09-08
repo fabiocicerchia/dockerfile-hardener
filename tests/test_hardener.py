@@ -38,6 +38,13 @@ def test_healthcheck_hint_when_expose_present() -> None:
     assert "HEALTHCHECK" in out
 
 
+def test_healthcheck_hint_idempotent() -> None:
+    once, _ = harden('FROM alpine:3.22\nEXPOSE 8080\nCMD ["app"]\n')
+    twice, changes = harden(once)
+    assert once == twice
+    assert not any(r == "healthcheck" for r, _ in changes)
+
+
 def test_idempotent() -> None:
     src = 'FROM alpine:3.22\nRUN apk add curl\nCMD ["app"]\n'
     once, _ = harden(src)

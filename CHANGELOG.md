@@ -35,6 +35,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- The HEALTHCHECK hint is idempotent again: it no longer re-appends its
+  `# TODO(hardener)` comment on every run, so `--fail-on-changes` goes green
+  for an already-hardened image that `EXPOSE`s a port.
+
 ## [0.1.0]
 
 ### Added
