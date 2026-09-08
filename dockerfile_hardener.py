@@ -305,8 +305,11 @@ def suggest_multi_stage(lines: list[str]) -> list[str]:
 
 
 PASSES = [
-    pin_latest_base,
+    # flag_floating_base first: after pin_latest_base an untagged base carries a
+    # `:latest` and its own TODO, and would then be noted twice under the same
+    # rule — the second, vaguer message winning the `--explain` line.
     flag_floating_base,
+    pin_latest_base,
     flag_build_arg_secrets,
     add_no_cache_flags,
     add_apt_cleanup,
