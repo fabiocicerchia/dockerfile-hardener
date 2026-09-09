@@ -7,8 +7,19 @@ from dockerfile_hardener import harden, main, pin_digests, resolve_digest
 
 def test_pins_untagged_base() -> None:
     out, changes = harden('FROM ubuntu\nRUN echo hi\nCMD ["true"]\n')
-    assert "ubuntu:latest  # TODO: pin a real version" in out
+    assert "FROM ubuntu:latest\n" in out
     assert any(r == "pin-base" for r, _ in changes)
+
+
+def test_hints_never_share_a_line_with_an_instruction() -> None:
+    """Dockerfile has no inline comments: a `#` after an instruction is parsed
+    as arguments, so `FROM x  # note` fails to build and `USER 1000  # note`
+    sets the user to the whole string."""
+    out, _ = harden('FROM ubuntu\nEXPOSE 8080\nENTRYPOINT ["app"]\n')
+    for line in out.splitlines():
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#"):
+            assert "#" not in line, f"instruction carries an inline comment: {line!r}"
 
 
 def test_package_manager_flags_added() -> None:
@@ -26,9 +37,7 @@ def test_apt_gets_cleanup_and_no_recommends() -> None:
 def test_user_inserted_before_entrypoint_only_when_missing() -> None:
     out, _ = harden('FROM alpine:3.22\nENTRYPOINT ["app"]\n')
     lines = out.splitlines()
-    assert lines.index("USER 10001  # TODO: create this user in an earlier layer if needed") < lines.index(
-        'ENTRYPOINT ["app"]'
-    )
+    assert lines.index("USER 10001") < lines.index('ENTRYPOINT ["app"]')
     _again, changes = harden(out)
     assert not any(r == "non-root" for r, _ in changes)
 
