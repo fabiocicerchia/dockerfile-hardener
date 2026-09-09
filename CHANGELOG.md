@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0](https://github.com/fabiocicerchia/dockerfile-hardener/compare/v0.2.1...v0.3.0) (2026-09-09)
+
+
+### Features
+
+* flag a floating base tag and a build-arg secret ([#85](https://github.com/fabiocicerchia/dockerfile-hardener/issues/85)) ([7018aca](https://github.com/fabiocicerchia/dockerfile-hardener/commit/7018acaa6b967f2462e0e562387c21f382c7b4b3))
+* **packaging:** ship a man page with the wheel ([#86](https://github.com/fabiocicerchia/dockerfile-hardener/issues/86)) ([30febf8](https://github.com/fabiocicerchia/dockerfile-hardener/commit/30febf8344dd200cb0722561d59a56350bd9185c))
+
+
+### Bug Fixes
+
+* **ci:** pin the editorconfig-checker binary version ([#69](https://github.com/fabiocicerchia/dockerfile-hardener/issues/69)) ([7455368](https://github.com/fabiocicerchia/dockerfile-hardener/commit/745536827b001de020bad2d9665d3a3e0c8f8e28))
+* stop the HEALTHCHECK hint re-appending on every run ([#77](https://github.com/fabiocicerchia/dockerfile-hardener/issues/77)) ([80d9399](https://github.com/fabiocicerchia/dockerfile-hardener/commit/80d9399c40a45676e74f95fdce7f8624a60129ea))
+
 ## [0.2.1](https://github.com/fabiocicerchia/dockerfile-hardener/compare/v0.2.0...v0.2.1) (2026-08-29)
 
 ### Bug Fixes
