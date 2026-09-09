@@ -41,7 +41,14 @@ _HEALTHCHECK_HINT = (
     "# TODO(hardener): add a HEALTHCHECK for the exposed port, e.g.\n"
     "# HEALTHCHECK --interval=30s CMD curl -sf http://127.0.0.1:8080/healthz || exit 1\n"
 )
-_PIN_BASE_HINT = "  # TODO(hardener): floating tag — pin to a digest (--pin-digests)"
+# Every hint that annotates an instruction goes on its own line above it.
+# Dockerfile has no inline comments: the parser treats everything after the
+# instruction as arguments, so `FROM x:1  # note` fails to build outright and
+# `USER 1000  # note` builds an image whose user is the whole string.
+_HARDENER_TODO = "# TODO(hardener):"
+_PIN_LATEST_HINT = f"{_HARDENER_TODO} base image had no tag — pin a real version\n"
+_PIN_BASE_HINT = f"{_HARDENER_TODO} floating tag — pin to a digest (--pin-digests)\n"
+_NONROOT_USER_HINT = f"{_HARDENER_TODO} create this user in an earlier layer if needed\n"
 _LEAKY_ARG_HINT = (
     "# hardener: a build arg or ENV with a default value is readable from the\n"
     "# published image with `docker history` — pass credentials with\n"
@@ -130,7 +137,8 @@ def pin_latest_base(lines: list[str]) -> list[str]:
         m = _UNTAGGED_FROM_RE.match(line)
         if m and "scratch" not in m.group(2):
             keyword, image, stage = m.group(1), m.group(2), m.group(3) or ""
-            out.append(f"{keyword}{image}:latest{stage}  # TODO: pin a real version\n")
+            out.append(_PIN_LATEST_HINT)
+            out.append(f"{keyword}{image}:latest{stage}\n")
             note(
                 "pin-base",
                 f"base image `{image}` had no tag — floating latest breaks reproducibility",
@@ -156,9 +164,12 @@ def flag_floating_base(lines: list[str]) -> list[str]:
             out.append(line)
             continue
         image, tag, comment = m.group(2), m.group(3), m.group(5)
-        # A line that already carries a comment keeps it: only the note fires,
-        # which is also what makes a second run a no-op.
-        out.append(line if comment else f"{line.rstrip()}{_PIN_BASE_HINT}\n")
+        # A line that already carries a comment, or that already follows a
+        # hardener TODO, keeps what it has: only the note fires, which is also
+        # what makes a second run a no-op.
+        if not comment and not (out and out[-1].startswith(_HARDENER_TODO)):
+            out.append(_PIN_BASE_HINT)
+        out.append(line)
         note(
             "pin-base",
             f"`{image}:{tag}` is a floating tag — pin to a digest so a rebuild cannot silently change the base",
@@ -231,7 +242,7 @@ def add_nonroot_user(lines: list[str]) -> list[str]:
     for i in range(len(lines) - 1, -1, -1):
         if _ENTRYPOINT_OR_CMD_RE.match(lines[i]):
             idx = i
-    lines = [*lines[:idx], "USER 10001  # TODO: create this user in an earlier layer if needed\n", *lines[idx:]]
+    lines = [*lines[:idx], _NONROOT_USER_HINT, "USER 10001\n", *lines[idx:]]
     note(
         "non-root",
         "containers should not run as root; added USER before ENTRYPOINT/CMD",
@@ -273,12 +284,10 @@ def add_healthcheck_hint(lines: list[str]) -> list[str]:
     """Suggest a HEALTHCHECK when the image EXPOSEs a port but has none."""
     # The hint itself counts as already-hinted, or every run appends another
     # copy of it to a file that EXPOSEs a port.
-    if any(_HEALTHCHECK_RE.match(ln) for ln in lines) or _HEALTHCHECK_HINT in "".join(lines):
-        return lines
     # The hint is a comment, so _HEALTHCHECK_RE never matches it back: without
-    # this the pass re-appends itself on every run and --fail-on-changes never
-    # goes green for an image that EXPOSEs a port.
-    if _HEALTHCHECK_HINT in "".join(lines):
+    # counting it as already-hinted the pass re-appends itself on every run and
+    # --fail-on-changes never goes green for an image that EXPOSEs a port.
+    if any(_HEALTHCHECK_RE.match(ln) for ln in lines) or _HEALTHCHECK_HINT in "".join(lines):
         return lines
     if any(_EXPOSE_RE.match(ln) for ln in lines):
         note("healthcheck", "images that EXPOSE a port should define a HEALTHCHECK")
