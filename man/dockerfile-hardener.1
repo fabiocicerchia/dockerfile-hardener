@@ -1,0 +1,60 @@
+.TH DOCKERFILE\-HARDENER 1 "2026-09" "dockerfile-hardener" "User Commands"
+.SH NAME
+dockerfile-hardener \- rewrite a Dockerfile to best practice and show the diff
+.SH SYNOPSIS
+.B dockerfile-hardener
+.I DOCKERFILE
+.RI [ options ]
+.SH DESCRIPTION
+Not a linter: it produces the fixed file and a unified diff you can apply.
+.PP
+By default the diff goes to standard output and nothing is written, so the
+change can be read before it lands.
+.SH OPTIONS
+.TP
+.B \-\-write
+Apply the changes in place.
+.TP
+.B \-\-explain
+Explain every change.
+.TP
+.B \-\-fail\-on\-changes
+CI mode: exit 1 if the file is not already hardened.
+.TP
+.B \-\-pin\-digests
+Resolve
+.B FROM
+tags to a registry digest. Docker Hub only, and needs network access.
+.SH EXIT STATUS
+.TP
+.B 0
+The file is hardened, or a diff was printed.
+.TP
+.B 1
+With
+.BR \-\-fail\-on\-changes ,
+the file needed changes.
+.SH EXAMPLES
+.PP
+See what would change:
+.PP
+.RS
+.B dockerfile-hardener Dockerfile \-\-explain
+.RE
+.PP
+Apply it:
+.PP
+.RS
+.B dockerfile-hardener Dockerfile \-\-write
+.RE
+.PP
+Gate a pull request:
+.PP
+.RS
+.B dockerfile-hardener Dockerfile \-\-fail\-on\-changes
+.RE
+.SH SEE ALSO
+.BR docker (1),
+.BR hadolint (1).
+Project documentation:
+https://github.com/fabiocicerchia/dockerfile-hardener
