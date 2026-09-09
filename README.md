@@ -29,12 +29,22 @@ Why:
 
 ## Passes
 
-pin untagged bases · `--no-install-recommends` · `apk --no-cache` ·
+pin untagged bases · flag a tagged-but-floating base (`FROM node:18`) ·
+flag a credential-shaped `ARG`/`ENV` carrying a default value ·
+`--no-install-recommends` · `apk --no-cache` ·
 `pip --no-cache-dir` · apt list cleanup in-layer · non-root `USER` ·
 `COPY --chown` once a `USER` is set · read-only-rootfs hint · HEALTHCHECK hint
 when a port is exposed · multi-stage hint when a single stage installs build
 tooling. All passes are **idempotent** (hardening a hardened file is a no-op —
 tested).
+
+Two of those flag rather than rewrite, and say so in `--explain`:
+
+- **`[pin-base]`** — resolving a tag to a digest needs a registry lookup, so
+  the default is to point at `--pin-digests`, which does it.
+- **`[build-arg-secret]`** — `docker history` prints every build arg and `ENV`
+  of a published image, so a default value there is published. The fix is
+  `RUN --mount=type=secret`, not a different default.
 
 ## Install
 
