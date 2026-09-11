@@ -1,0 +1,12 @@
+--- Dockerfile
++++ Dockerfile (hadofix)
+@@ -1,5 +1,8 @@
+ FROM python:3.12-slim
+ COPY requirements.txt /tmp/requirements.txt
+-RUN pip install --no-cache-dir flask
++# hadofix(DL3013): `pip install flask` installs whatever the index serves the
++# day it runs, so the same commit can build two different images. Pinned to the
++# version this repository already commits to elsewhere.
++RUN pip install --no-cache-dir flask==3.0.3
+ USER 10001
+ CMD ["python", "-m", "flask", "run"]

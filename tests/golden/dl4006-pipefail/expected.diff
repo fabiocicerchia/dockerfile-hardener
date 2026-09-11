@@ -1,0 +1,12 @@
+--- Dockerfile
++++ Dockerfile (hadofix)
+@@ -1,4 +1,9 @@
+ FROM debian:bookworm-slim
++# hadofix(DL4006): A pipeline's exit status is the last command's, so `curl … |
++# tar x` succeeds when curl serves a 404 and tar unpacks the error page.
++# pipefail fails the RUN where the pipe failed, and SHELL is how you ask for it
++# — here with /bin/bash, the shell this stage's base image has.
++SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+ RUN curl -fsSL https://example.com/app.tar.gz | tar -xz -C /opt
+ USER 10001
+ CMD ["/opt/app"]

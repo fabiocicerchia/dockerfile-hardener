@@ -16,6 +16,6 @@ labels: bug
 
 ## Environment
 
-- dockerfile-hardener version:
+- hadofix version:
 - Python version:
 - OS:

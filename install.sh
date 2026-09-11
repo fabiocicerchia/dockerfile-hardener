@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# One-line installer for dockerfile-hardener
-# Usage: curl -fsSL https://raw.githubusercontent.com/fabiocicerchia/dockerfile-hardener/main/install.sh | bash
+# One-line installer for hadofix
+# Usage: curl -fsSL https://raw.githubusercontent.com/fabiocicerchia/hadofix/main/install.sh | bash
 
 if command -v pipx &>/dev/null; then
-  pipx install git+https://github.com/fabiocicerchia/dockerfile-hardener
+  pipx install git+https://github.com/fabiocicerchia/hadofix
 else
-  pip install --user git+https://github.com/fabiocicerchia/dockerfile-hardener
+  pip install --user git+https://github.com/fabiocicerchia/hadofix
 fi
-echo "dockerfile-hardener installed. Run: dockerfile-hardener --help"
+echo "hadofix installed. Run: hadofix --help"

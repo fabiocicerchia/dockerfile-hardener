@@ -1,0 +1,12 @@
+--- Dockerfile
++++ Dockerfile (hadofix)
+@@ -1,4 +1,8 @@
+ FROM alpine:3.22
+ RUN adduser -D -u 10001 app
+-USER root
++# hadofix(DL3066): Root in a container is root on the host kernel: a mounted
++# volume or an escape starts from UID 0. 10001 is a UID, not an account — it
++# needs no adduser, and nothing in the image can resolve it back to root.
++# Create a real account in an earlier layer if the app needs a home directory.
++USER 10001
+ CMD ["/usr/local/bin/app"]

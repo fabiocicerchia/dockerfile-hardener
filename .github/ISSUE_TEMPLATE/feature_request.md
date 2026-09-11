@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea (e.g. a new hardening pass)
+about: Suggest an idea (e.g. a rule hadofix could fix)
 title: "[feat] "
 labels: enhancement
 ---

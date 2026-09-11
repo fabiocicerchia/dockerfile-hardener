@@ -4,10 +4,17 @@ Guidance for Claude Code (and other AI agents) working in this repo.
 
 ## Project
 
-dockerfile-hardener is a single-module Python CLI (`dockerfile_hardener.py`,
-entry point `main()`) that rewrites a Dockerfile to best practice and prints a
-unified diff — it produces the *fixed file*, not lint warnings. Passes are
-idempotent (re-hardening a hardened file is a no-op). Tests live in `tests/`.
+hadofix is a single-module Python CLI (`hadofix.py`, entry point `main()`)
+that **fixes what hadolint finds**. It runs `hadolint --format json` (or reads
+that JSON on stdin), rewrites the Dockerfile for the findings whose fix is
+mechanical, and lists everything else rather than guessing. The diff goes to
+stdout, the report to stderr, and `--write` applies. Tests live in `tests/`,
+with one golden case per rule under `tests/golden/`.
+
+hadolint is the engine and its configuration is the configuration: a rule
+ignored in `.hadolint.yaml` or by an inline pragma is never fixed. hadofix's
+own rules live in the `HF####` namespace so they can never collide with
+`DL####`.
 
 ## Commands
 
@@ -15,13 +22,14 @@ idempotent (re-hardening a hardened file is a no-op). Tests live in `tests/`.
 # setup: make dev        # editable install with dev deps (pytest, ruff, build)
 # test:  make test       # pytest -q
 # lint:  make lint       # ruff check .
-# run:   dockerfile-hardener Dockerfile --explain
+# run:   hadofix Dockerfile
 make help    # Show this help
 make setup   # Install the pre-commit hook
 make install # Install the package
 make dev     # Editable install with dev deps (pytest, ruff, build)
 make lint    # Run ruff
 make test    # Run tests
+make golden  # Regenerate the golden fixtures (needs hadolint on PATH)
 make build   # Build sdist and wheel
 ```
 
@@ -41,13 +49,24 @@ make build   # Build sdist and wheel
 ## Conventions
 
 - Match existing style; don't reformat unrelated code.
-- Keep passes idempotent and add a test that proves it (see `tests/`).
+- Keep fixers idempotent and add a golden case that proves it (see
+  `tests/golden/README.md`). Regenerate fixtures with `make golden`, never by
+  hand, and read the resulting diff — it is the review.
+- A fixer may only act where the fix is unambiguous. Pin from evidence (another
+  stage, a copied requirements file, a digest the user asked for); if that means
+  refusing, refuse and say what the reader has to decide.
+- Every fix writes a `# hadofix(RULE):` comment above its hunk: one or two
+  sentences a junior would learn from.
 - Update CHANGELOG.md (`## [Unreleased]`), docs/, and examples/ with behavior changes.
 - Never commit secrets; CI runs gitleaks. Keep `.env` out of git.
+- `tests/golden/` is excluded from the whitespace hooks on purpose: a unified
+  diff's blank context line is a line with one space on it, and trimming it
+  rewrites the expectation instead of the code.
 
 ## Guardrails
 
-- Zero runtime dependencies by design — prefer stdlib, don't add deps.
+- Zero runtime Python dependencies by design — prefer stdlib, don't add deps.
+  hadolint is the one external tool, and it is invoked as a subprocess.
 - Don't touch generated files or lockfiles by hand.
 - Ask before large refactors or destructive operations.
 

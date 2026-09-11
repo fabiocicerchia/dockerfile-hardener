@@ -1,0 +1,11 @@
+--- Dockerfile
++++ Dockerfile (hadofix)
+@@ -1,4 +1,7 @@
+ FROM debian:bookworm-slim
+-RUN apt-get update && apt-get install --no-install-recommends -y curl=7.88.1-10+deb12u5
++# hadofix(DL3009): The cleanup has to run in the same RUN as the install: a
++# later layer can hide the lists but every layer is still in the image, still
++# pushed, still pullable. Same layer, or it is only hidden.
++RUN apt-get update && apt-get install --no-install-recommends -y curl=7.88.1-10+deb12u5 && rm -rf /var/lib/apt/lists/*
+ USER 10001
+ CMD ["/usr/local/bin/app"]

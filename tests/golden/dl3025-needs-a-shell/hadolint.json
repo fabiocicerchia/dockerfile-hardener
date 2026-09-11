@@ -1,0 +1,10 @@
+[
+  {
+    "code": "DL3025",
+    "column": 1,
+    "file": "Dockerfile",
+    "level": "warning",
+    "line": 3,
+    "message": "Use arguments JSON notation for CMD and ENTRYPOINT arguments"
+  }
+]

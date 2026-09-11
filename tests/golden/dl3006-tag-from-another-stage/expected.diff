@@ -1,0 +1,15 @@
+--- Dockerfile
++++ Dockerfile (hadofix)
+@@ -1,7 +1,11 @@
+ FROM node:20.11-alpine AS builder
+ RUN node --version
+ 
+-FROM node
++# hadofix(DL3006): A tag is a label, not a version: whoever owns `node` can
++# push new bytes over `latest` tonight and your next build would pull them
++# without a diff. Pinned to `node:20.11-alpine` — another stage in this file
++# already pins it.
++FROM node:20.11-alpine
+ COPY --from=builder /app /app
+ USER 10001
+ CMD ["node", "/app/index.js"]

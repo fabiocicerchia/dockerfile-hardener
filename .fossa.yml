@@ -3,5 +3,5 @@
 version: 3
 
 project:
-  id: github.com/fabiocicerchia/dockerfile-hardener
-  name: dockerfile-hardener
+  id: github.com/fabiocicerchia/hadofix
+  name: hadofix

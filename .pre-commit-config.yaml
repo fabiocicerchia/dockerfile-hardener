@@ -7,9 +7,14 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # v6.0.0
     hooks:
-      # Whitespace and line endings.
+      # Whitespace and line endings. The golden fixtures are excluded on
+      # purpose: a unified diff's context lines start with a space, so a blank
+      # context line *is* a line with one space on it, and trimming it rewrites
+      # the expectation the test compares against.
       - id: trailing-whitespace
+        exclude: ^tests/golden/
       - id: end-of-file-fixer
+        exclude: ^tests/golden/
       - id: mixed-line-ending
       # A UTF-8 BOM makes a shebang unreadable and a JSON parser choke, and it
       # is invisible in every diff view — strip it rather than debug it.
@@ -76,8 +81,11 @@ repos:
   - repo: https://github.com/hadolint/hadolint
     rev: 2eece55955ced00200be9729e9728cb7dacca505  # v2.15.1
     hooks:
+      # hadofix's own Dockerfile fixtures are deliberately unfixed — they are
+      # the "before" side of every golden test — so hadolint skips them the
+      # same way it skips the examples.
       - id: hadolint-docker
-        exclude: ^examples/
+        exclude: ^(examples|tests/golden)/
 
   # Flags energy-wasteful patterns (busy loops, every-minute crons, SELECT *,
   # unpinned full-fat base images, missing k8s resource limits, ...). Gating in

@@ -5,7 +5,7 @@
       "fan_out": 0,
       "modules": 1
     },
-    "dockerfile_hardener": {
+    "hadofix": {
       "fan_in": 0,
       "fan_out": 0,
       "modules": 1

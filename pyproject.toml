@@ -3,9 +3,9 @@ requires = ["setuptools>=84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dockerfile-hardener"
+name = "hadofix"
 version = "0.3.2"
-description = "Rewrites Dockerfiles to best practice as a suggested diff, not lint warnings"
+description = "Fixes what hadolint finds: rewrites the Dockerfile for the rules whose fix is mechanical"
 readme = "README.md"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Fabio Cicerchia" }]
@@ -25,18 +25,18 @@ dependencies = []
 dev = ["pytest>=9.1.1", "ruff>=0.16.5", "build>=1.6.0", "basedpyright>=1.31"]
 
 [project.urls]
-Homepage = "https://github.com/fabiocicerchia/dockerfile-hardener"
-Issues = "https://github.com/fabiocicerchia/dockerfile-hardener/issues"
-Changelog = "https://github.com/fabiocicerchia/dockerfile-hardener/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/fabiocicerchia/hadofix"
+Issues = "https://github.com/fabiocicerchia/hadofix/issues"
+Changelog = "https://github.com/fabiocicerchia/hadofix/blob/main/CHANGELOG.md"
 
 [project.scripts]
-dockerfile-hardener = "dockerfile_hardener:main"
+hadofix = "hadofix:main"
 
 [tool.setuptools]
-py-modules = ["dockerfile_hardener"]
+py-modules = ["hadofix"]
 
 [tool.pytest.ini_options]
-# Without this the suite imports dockerfile_hardener from site-packages (pytest
+# Without this the suite imports hadofix from site-packages (pytest
 # does not add the rootdir to sys.path), so `make test` can pass green against
 # an installed wheel while the checkout is broken.
 pythonpath = ["."]
@@ -85,4 +85,4 @@ reportMissingTypeStubs = false
 # <prefix>/share/man/man1, which is on the default manpath for a system install
 # and for a --user one alike.
 [tool.setuptools.data-files]
-"share/man/man1" = ["man/dockerfile-hardener.1"]
+"share/man/man1" = ["man/hadofix.1"]
