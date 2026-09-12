@@ -70,6 +70,33 @@ The diff goes to stdout and the report to stderr, so
 `hadofix Dockerfile | git apply` and `hadofix Dockerfile --write` are both
 ordinary things to do.
 
+## Features
+
+- **hadolint is the engine.** hadofix runs `hadolint --format json` (or reads
+  that JSON on stdin), so your `.hadolint.yaml`, `--ignore` flags and inline
+  pragmas are the configuration — there is no second rule list to keep in sync.
+- **Rewrites the Dockerfile** for the rules whose fix is mechanical: base
+  pinning (`DL3006`, `DL3007`), package pinning (`DL3008`, `DL3013`, `DL3018`),
+  apt list cleanup (`DL3009`), `--no-install-recommends` (`DL3015`), a non-root
+  `USER` (`DL3002`, `DL3066`), `SHELL … -o pipefail` (`DL4006`) and exec-form
+  `CMD`/`ENTRYPOINT` (`DL3025`).
+- **Every hunk carries a `# hadofix(RULE):` comment** — one or two sentences on
+  why the change is right, so the diff is reviewable and the fix survives.
+- **Four rules of its own**, namespaced `HF####` so they cannot collide with
+  hadolint's: PID 1 and signals (`HF1001`), an entrypoint script that never
+  calls `exec` (`HF1002`), a forking process with no init (`HF1003`), and a
+  final stage that never leaves root (`HF1004`).
+- **Pins from evidence, never invention** — another stage in the same file, a
+  requirements file the Dockerfile copies in, or a registry digest you asked
+  for with `--resolve-digests`. Where there is none it refuses, and says what
+  you have to decide.
+- **Idempotent** — fixing a fixed file is a no-op, proved by a golden case per
+  rule.
+- `--write` to apply; plain `hadofix Dockerfile` is already a CI gate.
+- Distinct exit codes for "findings remain" (1) versus a Dockerfile that is
+  missing (66), unreadable (74) or permission-denied (77), and a hadolint that
+  is not installed (69) — so CI can tell a finding from a broken run.
+
 ## How it works
 
 ```text
