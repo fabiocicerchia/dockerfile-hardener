@@ -1,0 +1,15 @@
+--- Dockerfile
++++ Dockerfile (hadofix)
+@@ -1,7 +1,11 @@
+ FROM python:3.12-slim AS builder
+ RUN pip install --no-cache-dir build==1.2.2
+ 
+-FROM python:latest
++# hadofix(DL3007): A tag is a label, not a version: whoever owns `python` can
++# push new bytes over `latest` tonight and your next build would pull them
++# without a diff. Pinned to `python:3.12-slim` — another stage in this file
++# already pins it.
++FROM python:3.12-slim
+ COPY --from=builder /app /app
+ USER 10001
+ CMD ["python", "/app/main.py"]

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>dockerfile-hardener — Rewrites Dockerfiles to best practice — as a diff, not lint warnings.</title>
-<meta name="description" content="hadolint tells you what&#x27;s wrong; this hands you the fixed file: pinned bases, no-install-recommends, non-root USER, and more — every pass is idempotent.">
+<title>hadofix — hadolint finds it. hadofix fixes it.</title>
+<meta name="description" content="Runs hadolint, rewrites the Dockerfile for the rules whose fix is mechanical, and lists the rest rather than guessing. Every hunk carries a comment saying why.">
 <!-- The palette lives in the docs theme, so the splash and /docs/ cannot drift
      apart. The path is relative to the *deployed* layout: splash at /, rendered
      docs at /docs/. -->
@@ -43,20 +43,20 @@ footer{margin-top:2.2rem;color:#5c6684;font-size:.82rem}
 </head>
 <body>
 <div class="card">
-  <h1>🛡️ dockerfile-hardener</h1>
-  <p class="tagline">Rewrites Dockerfiles to best practice — as a diff, not lint warnings.</p>
+  <h1>🔧 hadofix</h1>
+  <p class="tagline">hadolint finds it. hadofix fixes it.</p>
   <p class="desc">
-    hadolint tells you what&#x27;s wrong; this hands you the fixed file: pinned bases, no-install-recommends, non-root
-    USER, and more — every pass is idempotent.
+    Runs <code>hadolint --format json</code>, rewrites the Dockerfile for the rules whose fix is mechanical,
+    and lists everything else rather than guessing at it. Every hunk carries a comment saying why.
   </p>
   <div class="install-label">Install</div>
-  <pre><code>pipx install git+https://github.com/fabiocicerchia/dockerfile-hardener</code></pre>
+  <pre><code>pipx install git+https://github.com/fabiocicerchia/hadofix</code></pre>
   <p class="alt">
-    or: <code>curl -fsSL https://raw.githubusercontent.com/fabiocicerchia/dockerfile-hardener/main/install.sh |
+    or: <code>curl -fsSL https://raw.githubusercontent.com/fabiocicerchia/hadofix/main/install.sh |
     bash</code>
   </p>
   <div class="links">
-    <a class="btn" href="https://github.com/fabiocicerchia/dockerfile-hardener">GitHub →</a>
+    <a class="btn" href="https://github.com/fabiocicerchia/hadofix">GitHub →</a>
     <a class="plain" href="docs/">Full docs</a>
   </div>
   <footer>Apache 2.0 · Fabio Cicerchia</footer>

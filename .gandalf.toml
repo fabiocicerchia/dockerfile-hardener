@@ -1,0 +1,15 @@
+# gandalf reviews this repository's pull requests
+# (.github/workflows/gandalf-pr-review.yml).
+#
+# The Dockerfiles under tests/golden/ and examples/ are deliberately broken:
+# each one is the "before" side of a golden test or a demo, and hadolint
+# finding DL3006 in tests/golden/dl3006-no-tag/Dockerfile is the fixture
+# working, not the repository failing. Excluding them keeps the review — and
+# the code-scanning alerts it uploads — about code someone might ship. Same
+# reasoning as the examples ignore in .greenlint.toml and the hadolint hook's
+# exclude in .pre-commit-config.yaml.
+#
+# Patterns match as gandalf documents them: a bare name is that directory
+# wherever it appears, a path is that path from the repository root.
+[gandalf]
+exclude = ["examples", "tests/golden"]

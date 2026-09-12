@@ -1,12 +1,12 @@
-# dockerfile-hardener docs — MkDocs Material, styled to feel like a product site
+# hadofix docs — MkDocs Material, styled to feel like a product site
 # (premium hero, feature cards, nav tabs, dark/light, local search, edit links)
 # while staying on the portfolio's standard tooling. See docs/stylesheets/extra.css
 # for the look; the accent palette lives there and is the only thing you swap.
-site_name: dockerfile-hardener
-site_description: Rewrites Dockerfiles to best practice as a suggested diff, not lint warnings.
-site_url: https://fabiocicerchia.github.io/dockerfile-hardener/docs/
-repo_url: https://github.com/fabiocicerchia/dockerfile-hardener
-repo_name: fabiocicerchia/dockerfile-hardener
+site_name: hadofix
+site_description: Fixes what hadolint finds — the rules whose fix is mechanical, as a diff you can read.
+site_url: https://fabiocicerchia.github.io/hadofix/docs/
+repo_url: https://github.com/fabiocicerchia/hadofix
+repo_name: fabiocicerchia/hadofix
 edit_uri: edit/main/docs/
 copyright: Copyright &copy; 2026 Fabio Cicerchia
 docs_dir: docs
@@ -75,7 +75,7 @@ extra:
   generator: false
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/fabiocicerchia/dockerfile-hardener
+      link: https://github.com/fabiocicerchia/hadofix
 
 # Only the search plugin ships with MkDocs itself. Anything else (social cards,
 # minify, git-revision-date) is a pip add — wire it into docs/requirements.txt

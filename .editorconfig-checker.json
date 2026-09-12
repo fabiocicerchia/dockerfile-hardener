@@ -1,6 +1,7 @@
 {
   "Exclude": [
-    "^LICENSE$"
+    "^LICENSE$",
+    "^tests/golden/"
   ],
   "Disable": {
     "IndentSize": true

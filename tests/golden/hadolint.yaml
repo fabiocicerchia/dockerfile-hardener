@@ -1,0 +1,4 @@
+# The fixtures are linted with hadolint's defaults, not with this repository's
+# own .hadolint.yaml: they exist to show what hadofix does with each rule, and
+# three of the rules it fixes are switched off for this repository's Dockerfiles.
+ignored: []

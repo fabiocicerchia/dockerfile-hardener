@@ -1,0 +1,109 @@
+.TH HADOFIX 1 "2026-09" "hadofix" "User Commands"
+.SH NAME
+hadofix \- apply the fixes hadolint asks for
+.SH SYNOPSIS
+.B hadofix
+.I DOCKERFILE
+.RI [ options ]
+.SH DESCRIPTION
+Not a linter:
+.BR hadolint (1)
+is the engine.
+.B hadofix
+runs
+.B hadolint \-\-format json
+over
+.IR DOCKERFILE ,
+rewrites it for the findings whose fix is mechanical, and lists every finding
+it will not guess at.
+.PP
+The unified diff goes to standard output and the report to standard error, so
+the diff can be piped and nothing is written unless
+.B \-\-write
+is given. Each hunk carries a
+.B # hadofix(RULE):
+comment explaining why the change is right.
+.PP
+hadolint's own configuration decides what is considered: a rule ignored in
+.I .hadolint.yaml
+or by an inline pragma is never fixed.
+.SH OPTIONS
+.TP
+.B \-\-write
+Apply the diff in place.
+.TP
+.BI \-\-from\-json " PATH"
+Read
+.B hadolint \-\-format json
+output from
+.I PATH
+.RB ( \- " for standard input)"
+instead of running hadolint.
+.TP
+.BI \-\-hadolint " BIN"
+The hadolint binary to run. Defaults to
+.B hadolint
+on
+.BR PATH .
+.TP
+.B \-\-resolve\-digests
+Let DL3006 and DL3007 pin a base image to a content digest. Docker Hub only,
+and needs network access.
+.SH EXIT STATUS
+.TP
+.B 0
+Clean: hadolint found nothing, or everything it found was fixed and written.
+.TP
+.B 1
+Findings remain \- some were refused, or the diff was printed and not applied.
+.TP
+.B 2
+Bad command line.
+.TP
+.B 66
+The Dockerfile does not exist.
+.TP
+.B 69
+hadolint is not installed, or its output could not be read.
+.TP
+.B 74
+The Dockerfile exists but could not be read.
+.TP
+.B 77
+Permission denied.
+.SH EXAMPLES
+.PP
+See what would change:
+.PP
+.RS
+.B hadofix Dockerfile
+.RE
+.PP
+Apply it:
+.PP
+.RS
+.B hadofix Dockerfile \-\-write
+.RE
+.PP
+Reuse hadolint output you already have:
+.PP
+.RS
+.B hadolint \-f json Dockerfile | hadofix Dockerfile \-\-from\-json \-
+.RE
+.SH SEE ALSO
+.BR docker (1),
+.BR hadolint (1).
+Project documentation:
+https://github.com/fabiocicerchia/hadofix
+.SH RULES
+.PP
+Rules named
+.B DL####
+are hadolint's. Rules named
+.B HF####
+are hadofix's own: shell-form ENTRYPOINT/CMD and what it costs at
+.BR "docker stop" " (HF1001),"
+an entrypoint script that never calls
+.B exec
+(HF1002), a forking process with no init (HF1003), and a final stage that never
+leaves root (HF1004).

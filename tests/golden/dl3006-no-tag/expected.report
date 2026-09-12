@@ -1,0 +1,7 @@
+hadofix: 1 finding left for you:
+  Dockerfile:1 warning DL3006
+      Always tag the version of an image explicitly
+      → hadofix does not pick versions: nothing else in this file pins
+        `ubuntu`. Write the tag you actually test against, or pass
+        --resolve-digests to pin `ubuntu:latest` to the digest it resolves to
+        right now.

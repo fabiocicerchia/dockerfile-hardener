@@ -3,5 +3,6 @@
 Runnable, self-contained examples. Each subfolder runs with a single command
 and shows one clear use case.
 
-- `basic/` — harden a deliberately-bad Dockerfile and see the diff.
-- `github-action/` — post a hardening suggestion as a PR comment in CI.
+- `basic/` — fix a deliberately-broken Dockerfile and see the diff, plus what
+  hadofix refuses to guess at.
+- `github-action/` — post a fix as a PR suggestion in CI.

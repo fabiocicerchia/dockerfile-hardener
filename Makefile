@@ -1,4 +1,4 @@
-.PHONY: help setup install dev lint test build run format analyze
+.PHONY: help setup install dev lint test golden build run format analyze
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -19,11 +19,15 @@ lint: ## Run the whole gate — every hook, every file
 test: ## Run tests
 	pytest -q
 
+golden: ## Regenerate the golden fixtures (needs hadolint on PATH)
+	python3 tests/golden/regenerate.py
+	HADOFIX_UPDATE_GOLDEN=1 pytest -q
+
 build: ## Build sdist and wheel
 	python -m build
 
-run: ## Run dockerfile-hardener
-	dockerfile-hardener --help
+run: ## Run hadofix
+	hadofix --help
 
 format: ## Rewrite the sources to canonical form
 	ruff format .

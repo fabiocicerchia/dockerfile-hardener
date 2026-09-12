@@ -1,0 +1,2 @@
+hadofix: fixed 2 findings in Dockerfile: DL3002, DL3066
+hadofix: nothing written — re-run with --write to apply

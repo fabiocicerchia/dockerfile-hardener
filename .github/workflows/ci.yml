@@ -42,6 +42,19 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
+      # hadofix's engine. The golden cases replay stored JSON so the suite runs
+      # without it, but the end-to-end test skips silently when it is missing —
+      # and a skipped test proves nothing. Pinned by version and checksum,
+      # matching the hook in .pre-commit-config.yaml.
+      - name: Install hadolint
+        env:
+          HADOLINT_VERSION: "2.15.1"
+          HADOLINT_SHA256: "c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507"
+        run: |
+          curl -fsSL -o /usr/local/bin/hadolint \
+            "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-Linux-x86_64"
+          echo "${HADOLINT_SHA256}  /usr/local/bin/hadolint" | sha256sum -c -
+          chmod +x /usr/local/bin/hadolint
       - name: Install package with dev dependencies
         run: |
           pip install --require-hashes -r requirements-dev.txt

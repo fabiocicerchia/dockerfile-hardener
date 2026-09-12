@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for taking the time to contribute to dockerfile-hardener! By
+Thanks for taking the time to contribute to hadofix! By
 participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Getting started
@@ -19,7 +19,11 @@ Create a branch: `git checkout -b feat/short-description`.
 ## Making changes
 
 - Keep changes focused; one logical change per PR.
-- Keep hardening passes **idempotent** and add a test that proves it (see `tests/`).
+- Keep fixers **idempotent** and add a golden case that proves it (see
+  [`tests/golden/`](tests/golden/README.md)).
+- A new fixer needs the fix to be **unambiguous**. If it would have to pick a
+  version, a name or a shell for the user, report it instead — that is a
+  feature, not a gap.
 - Update `docs/` and `examples/` when behavior changes.
 - Make sure `make lint` and `make test` pass locally.
 

@@ -1,0 +1,9 @@
+hadofix: 2 findings left for you:
+  Dockerfile:3 warning DL3025
+      Use arguments JSON notation for CMD and ENTRYPOINT arguments
+      → this command needs a shell (it uses a pipe, a variable or a glob), so
+        exec form would change what runs. Say it deliberately if you mean it:
+        CMD ["sh", "-c", "…"] — and know that PID 1 is then sh.
+  Dockerfile:3 warning HF1001
+      Shell-form CMD makes /bin/sh PID 1, so `docker stop` signals the shell
+      and never reaches the app. Use exec form.

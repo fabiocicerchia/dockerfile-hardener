@@ -1,0 +1,6 @@
+hadofix: 1 finding left for you:
+  Dockerfile:4 info HF1003
+      `nginx` forks worker processes, and as PID 1 it also inherits every
+      orphan in the container and is expected to reap it — PID 1 gets no
+      default signal handlers either. Put an init in front (tini, dumb-init) or
+      run the container with `docker run --init`.

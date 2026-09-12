@@ -1,0 +1,15 @@
+--- Dockerfile
++++ Dockerfile (hadofix)
+@@ -4,8 +4,11 @@
+  && rm -rf /var/lib/apt/lists/*
+ 
+ FROM debian:bookworm-slim
++# hadofix(DL3008): `apt-get install curl` installs whatever the index serves
++# the day it runs, so the same commit can build two different images. Pinned to
++# the version this repository already commits to elsewhere.
+ RUN apt-get update \
+- && apt-get install --no-install-recommends -y curl \
++ && apt-get install --no-install-recommends -y curl=7.88.1-10+deb12u5 \
+  && rm -rf /var/lib/apt/lists/*
+ USER 10001
+ CMD ["/usr/local/bin/app"]

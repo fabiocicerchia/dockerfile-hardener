@@ -1,0 +1,6 @@
+hadofix: 1 finding left for you:
+  Dockerfile:4 warning HF1002
+      `entrypoint.sh` never calls `exec`, so the command it starts is a child
+      of the script: PID 1 stays /bin/sh, SIGTERM stops the wrapper and the app
+      is killed on the timeout. End the script with `exec "$@"` (or `exec
+      <command>`).
