@@ -42,6 +42,12 @@ jobs:
           format: sarif
           output: trivy.sarif
           severity: CRITICAL,HIGH
+          # The Dockerfiles (and the pinned requirements.txt) under
+          # tests/golden/ and examples/ are deliberately broken fixtures: the
+          # "before" side of every golden test and every demo. Trivy reporting
+          # them is reporting hadofix's own test inputs, which buries anything
+          # real. Same exclusion as .gandalf.toml and .greenlint.toml.
+          skip-dirs: examples,tests/golden
       - name: Upload SARIF
         # Code scanning needs GitHub Advanced Security, which private repos
         # do not have — the upload 403s there. Public repos still publish.

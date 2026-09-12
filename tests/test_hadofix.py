@@ -266,9 +266,12 @@ def test_resolve_digest_returns_none_for_a_qualified_registry() -> None:
 def test_resolve_digest_uses_the_injected_fetch() -> None:
     calls: list[str] = []
 
+    # Both checks match from the start of the URL, not anywhere inside it:
+    # `"auth.docker.io" in url` is true of any URL that mentions the host,
+    # including one that only has it in a path or a query string.
     def fake_fetch(url: str, headers: dict[str, str] | None = None, digest_header: bool = False) -> str:
         calls.append(url)
-        if "auth.docker.io" in url:
+        if url.startswith("https://auth.docker.io/token?"):
             return '{"token": "t"}'
         assert headers is not None
         assert headers["Authorization"] == "Bearer t"
@@ -276,7 +279,7 @@ def test_resolve_digest_uses_the_injected_fetch() -> None:
         return f"sha256:{'c' * 64}"
 
     assert resolve_digest("alpine", "3.22", fetch=fake_fetch) == f"sha256:{'c' * 64}"
-    assert any("library/alpine" in url for url in calls)
+    assert any(url.startswith("https://registry-1.docker.io/v2/library/alpine/") for url in calls)
 
 
 # --------------------------------------------------------------------------

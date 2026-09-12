@@ -9,7 +9,7 @@ needs hadolint installed.
 
 import json
 import shutil
-import subprocess
+import subprocess  # nosec B404 — running hadolint is what this script is for
 import sys
 from pathlib import Path
 
@@ -23,7 +23,7 @@ def lint(case: Path) -> str:
     if hadolint is None:
         raise SystemExit("hadolint is not on PATH: https://github.com/hadolint/hadolint#install")
     extra = (case / "hadolint.args").read_text().split() if (case / "hadolint.args").is_file() else []
-    done = subprocess.run(  # noqa: S603 — a resolved path and a fixed argument list, no shell
+    done = subprocess.run(  # noqa: S603 — a resolved path, a fixed argument list, no shell  # nosec B603
         [hadolint, "--config", str(CONFIG), "--format", "json", *extra, str(case / "Dockerfile")],
         capture_output=True,
         text=True,

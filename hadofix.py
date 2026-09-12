@@ -19,7 +19,7 @@ import json
 import re
 import shlex
 import shutil
-import subprocess
+import subprocess  # nosec B404 — hadolint is the engine; running it is the point
 import sys
 import textwrap
 import urllib.request
@@ -67,7 +67,6 @@ _USER_RE = re.compile(r"^(?P<head>\s*USER\s+)(?P<who>\S+)\s*$", re.IGNORECASE)
 _ENTRYPOINT_OR_CMD_RE = re.compile(r"^(?P<indent>\s*)(?P<keyword>ENTRYPOINT|CMD)\s+(?P<args>.+)$", re.IGNORECASE)
 _APT_INSTALL_RE = re.compile(r"\b(apt(?:-get)?\s+install)\b")
 _EXEC_UNSAFE_RE = re.compile(r"[|&;<>$`*?(){}\[\]\\]")
-_SHEBANG_SH_RE = re.compile(r"^#!.*\b(?:ba|a|da|k|z)?sh\b")
 _EXEC_CALL_RE = re.compile(r"^\s*exec\s+\S", re.MULTILINE)
 _ROOT_USERS = {"root", "0", "root:root", "0:0"}
 
@@ -248,14 +247,14 @@ class Doc:
 
     def stages(self) -> list[Stage]:
         """Every build stage, with the base image it starts from."""
-        froms = [inst for inst in self.instructions() if inst.keyword == "FROM"]
+        from_lines = [inst for inst in self.instructions() if inst.keyword == "FROM"]
         out: list[Stage] = []
-        for pos, inst in enumerate(froms):
+        for pos, inst in enumerate(from_lines):
             m = _FROM_RE.match(inst.text)
             if not m:
                 continue
             image, tag, digest = parse_ref(m.group("ref"))
-            end = froms[pos + 1].start - 1 if pos + 1 < len(froms) else len(self.lines) - 1
+            end = from_lines[pos + 1].start - 1 if pos + 1 < len(from_lines) else len(self.lines) - 1
             out.append(Stage(image, tag, digest, m.group("alias"), inst.start, end))
         return out
 
@@ -738,7 +737,7 @@ def _entrypoint_script_finding(doc: Doc, commands: Sequence[tuple[Instruction, r
         if script is None:
             continue
         text = _read_text(script)
-        if not ((text.startswith("#!") and _SHEBANG_SH_RE.match(text)) or argv[0].endswith(".sh")):
+        if not _looks_like_a_shell_script(text, argv[0]):
             continue
         if _EXEC_CALL_RE.search(text):
             continue
@@ -803,6 +802,18 @@ def _map_into_context(source: str, destination: str, target: str) -> str | None:
     return source if Path(source).name == remainder else f"{source}/{remainder}"
 
 
+def _looks_like_a_shell_script(text: str, target: str) -> bool:
+    """A shebang that names a shell, or a path that ends in `.sh`.
+
+    The shebang is split rather than pattern-matched: every shell's name ends
+    in `sh` (sh, bash, dash, ash, ksh, zsh), and `#!/usr/bin/env bash` puts
+    that name in the second word.
+    """
+    shebang = text.splitlines()[0] if text.startswith("#!") else ""
+    words = shebang.removeprefix("#!").split()
+    return any(word.rsplit("/", maxsplit=1)[-1].endswith("sh") for word in words) or target.endswith(".sh")
+
+
 def _read_text(path: Path) -> str:
     """Read a file from the build context; an unreadable one simply says nothing."""
     try:
@@ -826,7 +837,7 @@ def run_hadolint(binary: str, dockerfile: Path) -> str:
         )
         raise HadolintError(msg)
     try:
-        done = subprocess.run(  # noqa: S603 — a resolved path and a fixed argument list, no shell
+        done = subprocess.run(  # noqa: S603 — a resolved path, a fixed argument list, no shell  # nosec B603
             [resolved, "--format", "json", str(dockerfile)],
             capture_output=True,
             text=True,
@@ -904,7 +915,7 @@ def _http_get(url: str, headers: dict[str, str] | None = None, digest_header: bo
         msg = f"refusing to fetch a non-https URL: {url}"
         raise ValueError(msg)
     req = urllib.request.Request(url, headers=headers or {})  # noqa: S310 — scheme checked above
-    with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT_SECONDS) as resp:  # noqa: S310 — as above
+    with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT_SECONDS) as resp:  # noqa: S310 — as above  # nosec B310
         if digest_header:
             return resp.headers.get("Docker-Content-Digest")
         return resp.read().decode()

@@ -123,14 +123,20 @@ hadolint -f json Dockerfile | hadofix Dockerfile --from-json -
 
 | Rule | hadolint's finding | What hadofix writes |
 | --- | --- | --- |
-| `DL3006` | base image has no tag | the tag another stage in the same file already pins for that image, or a digest with `--resolve-digests` |
-| `DL3007` | base image is `:latest` | as above — `:latest` is never accepted as the answer |
-| `DL3008` `DL3013` `DL3018` | apt/pip/apk package is unpinned | the version this repository already commits to: another stage, or a `requirements.txt` the Dockerfile copies in |
-| `DL3009` | apt lists left behind | `&& rm -rf /var/lib/apt/lists/*`, in the same `RUN` |
+| `DL3006` | base image has no tag | the tag another stage pins, or a digest |
+| `DL3007` | base image is `:latest` | as above — `:latest` is never the answer |
+| `DL3008` `DL3013` `DL3018` | package is unpinned | the version this repository pins elsewhere |
+| `DL3009` | apt lists left behind | `&& rm -rf /var/lib/apt/lists/*`, same `RUN` |
 | `DL3015` | apt installs recommended packages | `--no-install-recommends` |
 | `DL3002` `DL3066` | last `USER` is root, or is not numeric | `USER 10001` |
-| `DL4006` | `RUN` with a pipe and no pipefail | `SHELL ["/bin/bash", "-o", "pipefail", "-c"]` above it — `/bin/ash` when the stage's base is alpine or busybox |
-| `DL3025` | `CMD`/`ENTRYPOINT` in shell form | the same command in exec form, when it needs no shell |
+| `DL4006` | `RUN` with a pipe and no pipefail | a `SHELL` line with `-o pipefail` above it |
+| `DL3025` | `CMD`/`ENTRYPOINT` in shell form | the same command in exec form |
+
+A base image is pinned from another stage in the same file, or from a digest
+with `--resolve-digests`; a package from another stage or a `requirements.txt`
+the Dockerfile copies in. The `SHELL` line names `/bin/bash`, or `/bin/ash`
+when the stage's base is alpine or busybox. Exec form is only written where the
+command needs no shell.
 
 Anything else hadolint reports is listed untouched. Adding a rule is one fixer
 and one golden test — the bar is that the fix is *unambiguous*, not that it is
@@ -142,12 +148,19 @@ Three things hadolint has no rule for, plus one it only half covers. They are
 reported in hadolint's own shape, in a namespace that cannot collide with
 `DL####`:
 
-| Rule | What it says | Fixed? |
-| --- | --- | --- |
-| `HF1001` | shell-form `ENTRYPOINT`/`CMD` makes `/bin/sh` PID 1, so `docker stop` signals the shell and the app is SIGKILLed on the timeout instead of shutting down | yes — same rewrite as `DL3025`, which flags the form; `HF1001` is there for the consequence |
-| `HF1002` | the entrypoint script never calls `exec`, so the app runs as its child and PID 1 stays the wrapper | no — see below |
-| `HF1003` | the image runs a process that forks workers (nginx, gunicorn, …) with no init to reap orphans or forward signals | no — see below |
-| `HF1004` | the final stage never sets a `USER`, so everything runs as root; hadolint's `DL3002` only fires on an explicit `USER root` | yes — `USER 10001` before the final command |
+- **`HF1001` — shell form makes the shell PID 1.** `docker stop` sends SIGTERM
+  to `/bin/sh`, which does not forward it, so the app is SIGKILLed on the
+  timeout instead of shutting down. **Fixed**, by the same rewrite as `DL3025`:
+  that rule flags the form, this one is the consequence.
+- **`HF1002` — the entrypoint script never calls `exec`.** The command runs as
+  a child of the script, so PID 1 stays the wrapper. **Reported**: where `exec`
+  belongs is a decision about the script.
+- **`HF1003` — a process that forks workers, with no init.** nginx, gunicorn
+  and friends inherit every orphan in the container as PID 1 and are expected
+  to reap it, and PID 1 gets no default signal handlers. **Reported**.
+- **`HF1004` — the final stage never sets a `USER`.** Everything in the image
+  runs as root, and hadolint's `DL3002` only fires on an explicit `USER root`.
+  **Fixed**: `USER 10001` before the final command.
 
 ## What it refuses to guess at
 
