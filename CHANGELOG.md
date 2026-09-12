@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0](https://github.com/fabiocicerchia/dockerfile-hardener/compare/v0.3.2...v1.0.0) (2026-09-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* the package, the module and the command are now hadofix; the repository is renamed to match. The old passes are gone along with --explain, --fail-on-changes and --pin-digests (now --resolve-digests), and hadolint is required on PATH.
+
+### Features
+
+* rewrite as hadofix, a fixer on top of hadolint ([#95](https://github.com/fabiocicerchia/dockerfile-hardener/issues/95)) ([a5a73dc](https://github.com/fabiocicerchia/dockerfile-hardener/commit/a5a73dc158ef213731ad3696dc05585962fa6636))
+
+
+### Documentation
+
+* add a Features section to the README ([#96](https://github.com/fabiocicerchia/dockerfile-hardener/issues/96)) ([6e40532](https://github.com/fabiocicerchia/dockerfile-hardener/commit/6e40532daf90306e5d5941a042dbea21b1a14057))
+
 ## [0.3.2](https://github.com/fabiocicerchia/dockerfile-hardener/compare/v0.3.1...v0.3.2) (2026-09-11)
 
 
