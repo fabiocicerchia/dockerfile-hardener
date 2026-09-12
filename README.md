@@ -27,6 +27,26 @@ Why:
   ...
 ```
 
+## Features
+
+- Hands you the **fixed Dockerfile as a diff**, not a list of lint warnings —
+  hadolint tells you what is wrong, this rewrites it.
+- `--explain` prints the reason behind every change, keyed by rule ID.
+- Twelve passes covering base pinning, `--no-install-recommends`,
+  `apk --no-cache`, `pip --no-cache-dir`, in-layer apt cleanup, non-root
+  `USER`, `COPY --chown`, read-only-rootfs and HEALTHCHECK hints, and a
+  multi-stage hint when one stage installs build tooling.
+- **Every pass is idempotent** — hardening an already-hardened file is a
+  no-op, and that is tested.
+- Flags rather than rewrites where a rewrite would be wrong, and says so:
+  `[pin-base]` needs a registry lookup (`--pin-digests` does it), and
+  `[build-arg-secret]` needs `RUN --mount=type=secret`, not a different
+  default — `docker history` publishes every build arg of a published image.
+- `--write` to apply, `--fail-on-changes` as a CI gate.
+- Distinct exit codes for "not hardened yet" (1) versus missing (66),
+  unreadable (74) or permission-denied (77), so CI can tell a finding from a
+  broken run.
+
 ## Passes
 
 pin untagged bases · flag a tagged-but-floating base (`FROM node:18`) ·
