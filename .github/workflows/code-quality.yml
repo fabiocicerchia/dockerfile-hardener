@@ -6,8 +6,8 @@ name: code-quality
 # fresh — SHA-pin to match ci.yml if scorecard flags it.
 
 on:
-  push:
-    branches: [main]
+  # No push trigger: the pull request already ran this on the identical
+  # tree. What a merge cannot tell you, the schedule below can.
   pull_request:
 
 permissions:
