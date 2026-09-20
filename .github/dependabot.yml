@@ -22,3 +22,7 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    ignore:
+      # tests/golden/dl3013-pip-pin/requirements.txt is a fixture, not a
+      # dependency: its pin is the expected output, so a bump fails the test.
+      - dependency-name: "flask"
