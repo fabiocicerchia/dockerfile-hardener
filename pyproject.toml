@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hadofix"
-version = "1.0.0"
+version = "1.0.1"
 description = "Fixes what hadolint finds: rewrites the Dockerfile for the rules whose fix is mechanical"
 readme = "README.md"
 license = { text = "Apache-2.0" }
