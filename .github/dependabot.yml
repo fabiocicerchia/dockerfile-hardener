@@ -17,7 +17,7 @@ updates:
       actions:
         patterns: ["*"]
   - package-ecosystem: "pip"
-    directory: "/"
+    directories: ["/", "/tests/golden/dl3013-pip-pin"]
     schedule:
       interval: weekly
     cooldown:
@@ -25,4 +25,5 @@ updates:
     ignore:
       # tests/golden/dl3013-pip-pin/requirements.txt is a fixture, not a
       # dependency: its pin is the expected output, so a bump fails the test.
+      # Its directory is listed above, or this ignore never reaches it.
       - dependency-name: "flask"
