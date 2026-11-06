@@ -18,16 +18,17 @@ import difflib
 import json
 import re
 import shlex
-import shutil
-import subprocess  # nosec B404 — hadolint is the engine; running it is the point
 import sys
 import textwrap
-import urllib.request
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Protocol, cast
+from typing import cast
+
+# Re-exported: hadofix's public API predates the split into hadofix_io.
+from hadofix_io import Fetcher as Fetcher
+from hadofix_io import HadolintError, resolve_digest, run_hadolint
 
 # Exit codes, sysexits.h style. 1 is the CI verdict "this Dockerfile still has
 # findings", so a read failure never reuses it: a gate has to tell "not fixed"
@@ -89,32 +90,8 @@ _FORKING_BINARIES = (
 # reaper and HF1003 has nothing to say.
 _INIT_BINARIES = ("tini", "dumb-init", "catatonit", "s6-svscan", "s6-overlay", "supervisord", "runsvdir")
 
-# Docker Hub registry v2, the only registry --resolve-digests knows how to talk
-# to. Anything with an explicit host is left alone rather than guessing at
-# registry-specific auth.
-_DOCKER_AUTH_URL = "https://auth.docker.io/token"
-_DOCKER_AUTH_SERVICE = "registry.docker.io"
-_DOCKER_REGISTRY_URL = "https://registry-1.docker.io/v2"
-_MANIFEST_ACCEPT = "application/vnd.docker.distribution.manifest.v2+json"
-_HTTP_TIMEOUT_SECONDS = 10
-
-
-class Fetcher(Protocol):
-    """One HTTP GET, as this tool needs it: the body, or None when it failed.
-
-    A Protocol rather than `Callable[..., str | None]`: the ellipsis form says
-    nothing about the arguments, so a fake with the wrong signature
-    type-checks and then fails at run time.
-    """
-
-    def __call__(self, url: str, headers: dict[str, str] | None = None, digest_header: bool = False) -> str | None: ...
-
 
 Resolver = Callable[[str, str], str | None]
-
-
-class HadolintError(RuntimeError):
-    """hadolint could not be run, or did not answer in JSON."""
 
 
 @dataclass(frozen=True)
@@ -824,32 +801,6 @@ def _read_text(path: Path) -> str:
 # --------------------------------------------------------------------------
 
 
-def run_hadolint(binary: str, dockerfile: Path) -> str:
-    """Run `hadolint --format json` and hand back its output."""
-    resolved = shutil.which(binary)
-    if resolved is None:
-        msg = (
-            f"{binary}: not found. hadolint is the engine hadofix fixes for — install it "
-            f"(https://github.com/hadolint/hadolint), or pass its JSON with --from-json."
-        )
-        raise HadolintError(msg)
-    try:
-        done = subprocess.run(  # noqa: S603 — a resolved path, a fixed argument list, no shell  # nosec B603
-            [resolved, "--format", "json", str(dockerfile)],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except OSError as err:
-        msg = f"{binary}: {err.strerror}"
-        raise HadolintError(msg) from err
-    # hadolint exits 1 when it has findings, which is the normal case here.
-    if done.returncode > EX_FINDINGS:
-        msg = f"{binary} exited {done.returncode}: {done.stderr.strip() or done.stdout.strip()}"
-        raise HadolintError(msg)
-    return done.stdout
-
-
 def parse_findings(payload: str) -> list[Finding]:
     """Read hadolint's JSON. Its shape is the contract between the two tools."""
     try:
@@ -877,45 +828,6 @@ def parse_findings(payload: str) -> list[Finding]:
             )
         )
     return out
-
-
-def resolve_digest(image: str, tag: str, fetch: Fetcher | None = None) -> str | None:
-    """Resolve `image:tag` to a `sha256:…` digest through the Docker Hub API.
-
-    Only Docker Hub: an image with an explicit registry host is left alone
-    rather than guessing at registry-specific auth. Returns None on any failure
-    (offline, rate limited, unknown image) so the caller just reports the
-    finding instead.
-    """
-    head = image.split("/", maxsplit=1)[0]
-    if "/" in image and ("." in head or ":" in head):
-        return None
-    repo = image if "/" in image else f"library/{image}"
-    fetch = fetch or _http_get
-    try:
-        auth = fetch(f"{_DOCKER_AUTH_URL}?service={_DOCKER_AUTH_SERVICE}&scope=repository:{repo}:pull")
-        if auth is None:
-            return None
-        token: object = json.loads(auth).get("token")
-        if not isinstance(token, str):
-            return None
-        headers = {"Authorization": f"Bearer {token}", "Accept": _MANIFEST_ACCEPT}
-        return fetch(f"{_DOCKER_REGISTRY_URL}/{repo}/manifests/{tag}", headers=headers, digest_header=True)
-    # Any failure here means "cannot pin this line", never "crash the run".
-    except Exception:
-        return None
-
-
-def _http_get(url: str, headers: dict[str, str] | None = None, digest_header: bool = False) -> str | None:
-    """The real network fetch behind resolve_digest; swapped out in tests."""
-    if not url.startswith("https://"):
-        msg = f"refusing to fetch a non-https URL: {url}"
-        raise ValueError(msg)
-    req = urllib.request.Request(url, headers=headers or {})  # noqa: S310 — scheme checked above
-    with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT_SECONDS) as resp:  # noqa: S310 — as above  # nosec B310
-        if digest_header:
-            return resp.headers.get("Docker-Content-Digest")
-        return resp.read().decode()
 
 
 # --------------------------------------------------------------------------

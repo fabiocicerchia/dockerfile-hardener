@@ -33,7 +33,7 @@ Changelog = "https://github.com/fabiocicerchia/hadofix/blob/main/CHANGELOG.md"
 hadofix = "hadofix:main"
 
 [tool.setuptools]
-py-modules = ["hadofix"]
+py-modules = ["hadofix", "hadofix_io"]
 
 [tool.pytest.ini_options]
 # Without this the suite imports hadofix from site-packages (pytest
