@@ -9,10 +9,13 @@ Regenerate them with `make golden` after a deliberate change.
 import io
 import os
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
+import hadofix as hadofix_module
 from hadofix import (
     APT,
     EX_FINDINGS,
@@ -285,6 +288,42 @@ def test_resolve_digest_uses_the_injected_fetch() -> None:
 # --------------------------------------------------------------------------
 # With the real engine on PATH, end to end.
 # --------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(os.name != "posix", reason="the stand-in hadolint is a shell script")
+def test_the_cli_runs_hadolint_and_writes_the_fix(tmp_path: Path) -> None:
+    """The whole journey in a real process: run the engine, print the diff, --write, re-run clean.
+
+    hadolint is replaced by a script that answers with the golden JSON, so this
+    covers the subprocess hand-off on any machine, hadolint installed or not.
+    """
+    case = GOLDEN / "dl3015-no-install-recommends"
+    shutil.copy(case / "Dockerfile", tmp_path / "Dockerfile")
+    shutil.copy(case / "hadolint.json", tmp_path / "hadolint.json")
+    engine = tmp_path / "hadolint"
+    # hadolint exits 1 when it has findings; hadofix must treat that as normal.
+    engine.write_text(f"#!/bin/sh\ncat '{tmp_path / 'hadolint.json'}'\nexit 1\n")
+    engine.chmod(0o755)
+
+    def hadofix(*argv: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(  # noqa: S603 — the interpreter running this suite, fixed arguments
+            [sys.executable, str(Path(hadofix_module.__file__)), "Dockerfile", "--hadolint", str(engine), *argv],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    first = hadofix("--write")
+    assert first.returncode == EX_OK
+    assert first.stdout == (case / "expected.diff").read_text()
+    assert "fixed 1 finding in Dockerfile: DL3015" in first.stderr
+    assert "wrote Dockerfile" in first.stderr
+    assert "--no-install-recommends" in (tmp_path / "Dockerfile").read_text()
+
+    (tmp_path / "hadolint.json").write_text("[]")
+    again = hadofix()
+    assert (again.returncode, again.stdout) == (EX_OK, ""), "the fixed file passes the gate"
 
 
 @pytest.mark.skipif(shutil.which("hadolint") is None, reason="hadolint is not installed")
