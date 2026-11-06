@@ -26,8 +26,6 @@ from functools import partial
 from pathlib import Path
 from typing import cast
 
-# Re-exported: hadofix's public API predates the split into hadofix_io.
-from hadofix_io import Fetcher as Fetcher
 from hadofix_io import HadolintError, resolve_digest, run_hadolint
 
 # Exit codes, sysexits.h style. 1 is the CI verdict "this Dockerfile still has

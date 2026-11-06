@@ -2,8 +2,9 @@
 
 ## Overview
 
-A single module, `hadofix.py`, with no runtime dependencies and one external
-tool: hadolint. hadolint says what is wrong with a Dockerfile; hadofix decides
+Two modules with no runtime dependencies and one external tool, hadolint:
+`hadofix.py` holds the rules and fixers, `hadofix_io.py` the subprocess and the
+network. hadolint says what is wrong with a Dockerfile; hadofix decides
 which of those findings it can repair without guessing, repairs them, and
 prints a unified diff.
 
@@ -18,8 +19,7 @@ Dockerfile ─┐
 
 - **Definitions** — the module opens with the tables everything else reads:
   the `EX_*` exit codes, the `HF####` rule namespace, the compiled Dockerfile
-  patterns, the package-manager descriptions, and the Docker Hub endpoints. No
-  regex is compiled anywhere else.
+  patterns and the package-manager descriptions. No regex is compiled anywhere else.
 - **`Finding`** — one rule violation in hadolint's shape (`code`, `line`,
   `level`, `message`). hadofix's own rules produce the same record, so one list
   and one report cover both.
@@ -41,10 +41,10 @@ Dockerfile ─┐
   never leaves root.
 - **`fix(doc, findings)`** — applies every fixable finding bottom-up and
   returns one `Outcome` per finding, so nothing is silently dropped.
-- **`run_hadolint` / `parse_findings`** — the engine seam. `--from-json`
+- **`run_hadolint` (`hadofix_io.py`) / `parse_findings`** — the engine seam. `--from-json`
   replaces the subprocess with a file or stdin, which is also how the test
   suite runs without hadolint installed.
-- **`resolve_digest`** — the opt-in `--resolve-digests` path, and the only code
+- **`resolve_digest`** (`hadofix_io.py`) — the opt-in `--resolve-digests` path, and the only code
   that touches the network. It takes an injectable fetcher, so the tests never
   do.
 - **`render_report` / `main`** — diff on stdout, report on stderr, an exit code

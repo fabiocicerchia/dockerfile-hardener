@@ -4,8 +4,9 @@ Guidance for Claude Code (and other AI agents) working in this repo.
 
 ## Project
 
-hadofix is a single-module Python CLI (`hadofix.py`, entry point `main()`)
-that **fixes what hadolint finds**. It runs `hadolint --format json` (or reads
+hadofix is a Python CLI (`hadofix.py`, entry point `main()`; the hadolint
+subprocess and Docker Hub calls live in `hadofix_io.py`) that **fixes what
+hadolint finds**. It runs `hadolint --format json` (or reads
 that JSON on stdin), rewrites the Dockerfile for the findings whose fix is
 mechanical, and lists everything else rather than guessing. The diff goes to
 stdout, the report to stderr, and `--write` applies. Tests live in `tests/`,
