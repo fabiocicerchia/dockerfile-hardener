@@ -359,6 +359,14 @@ def _resolve_base(doc: Doc, image: str, tag: str | None, index: int) -> tuple[st
     return None, ""
 
 
+def _tokens(text: str) -> list[str]:
+    """Shell-split an instruction, or give up quietly on unbalanced quotes."""
+    try:
+        return shlex.split(text)
+    except ValueError:
+        return []
+
+
 @dataclass(frozen=True)
 class Manager:
     """One package manager, as the version-pinning fixer needs to see it."""
@@ -368,6 +376,38 @@ class Manager:
     separator: str
     value_flags: frozenset[str]
     how_to_find: str
+
+    def installed_packages(self, text: str) -> list[str]:
+        """Every package argument of every `<manager> <verb>` in one instruction."""
+        tokens = _tokens(text)
+        found: list[str] = []
+        i = 0
+        while i < len(tokens):
+            if tokens[i] in self.binaries and i + 1 < len(tokens) and tokens[i + 1] == self.verb:
+                i = self._collect_packages(tokens, i + 2, found)
+                continue
+            i += 1
+        return found
+
+    def _collect_packages(self, tokens: Sequence[str], start: int, found: list[str]) -> int:
+        """Read package arguments until the command ends; return where it ended."""
+        i = start
+        while i < len(tokens) and tokens[i] not in {"&&", "||", ";", "|", ">", ">>"}:
+            token = tokens[i]
+            if token in self.value_flags:
+                i += 2
+                continue
+            # A local path or a URL is not a package name anyone can pin for you.
+            if not token.startswith("-") and not token.startswith((".", "/")) and "://" not in token:
+                found.append(token)
+            i += 1
+        return i
+
+    def is_pinned(self, token: str) -> bool:
+        """Does this package argument already name a version?"""
+        if self is PIP:
+            return any(op in token for op in ("==", ">=", "<=", "~=", "!=", "@"))
+        return "=" in token
 
 
 APT = Manager(
@@ -395,55 +435,12 @@ PIP = Manager(
 )
 
 
-def _tokens(text: str) -> list[str]:
-    """Shell-split an instruction, or give up quietly on unbalanced quotes."""
-    try:
-        return shlex.split(text)
-    except ValueError:
-        return []
-
-
-def _installed_packages(manager: Manager, text: str) -> list[str]:
-    """Every package argument of every `<manager> <verb>` in one instruction."""
-    tokens = _tokens(text)
-    found: list[str] = []
-    i = 0
-    while i < len(tokens):
-        if tokens[i] in manager.binaries and i + 1 < len(tokens) and tokens[i + 1] == manager.verb:
-            i = _collect_packages(manager, tokens, i + 2, found)
-            continue
-        i += 1
-    return found
-
-
-def _collect_packages(manager: Manager, tokens: Sequence[str], start: int, found: list[str]) -> int:
-    """Read package arguments until the command ends; return where it ended."""
-    i = start
-    while i < len(tokens) and tokens[i] not in {"&&", "||", ";", "|", ">", ">>"}:
-        token = tokens[i]
-        if token in manager.value_flags:
-            i += 2
-            continue
-        # A local path or a URL is not a package name anyone can pin for you.
-        if not token.startswith("-") and not token.startswith((".", "/")) and "://" not in token:
-            found.append(token)
-        i += 1
-    return i
-
-
-def _is_pinned(manager: Manager, token: str) -> bool:
-    """Does this package argument already name a version?"""
-    if manager is PIP:
-        return any(op in token for op in ("==", ">=", "<=", "~=", "!=", "@"))
-    return "=" in token
-
-
 def _known_versions(doc: Doc, manager: Manager) -> dict[str, str]:
     """Versions this Dockerfile already commits to, for the same manager."""
     known: dict[str, str] = {}
     for inst in doc.instructions():
-        for token in _installed_packages(manager, inst.text):
-            if _is_pinned(manager, token):
+        for token in manager.installed_packages(inst.text):
+            if manager.is_pinned(token):
                 name, _, version = token.partition(manager.separator)
                 known.setdefault(name, version)
     if manager is PIP:
@@ -481,7 +478,7 @@ def fix_pin_packages(manager: Manager, doc: Doc, finding: Finding) -> Fixed | Sk
     inst = doc.target(finding)
     if inst is None:
         return Skipped("the reported line does not start an instruction")
-    unpinned = [p for p in _installed_packages(manager, inst.text) if not _is_pinned(manager, p)]
+    unpinned = [p for p in manager.installed_packages(inst.text) if not manager.is_pinned(p)]
     known = _known_versions(doc, manager)
     missing = [p for p in unpinned if p not in known]
     if not unpinned:
