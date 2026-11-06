@@ -1,4 +1,4 @@
-FROM node:20.11-alpine AS builder
+FROM node:26.1-alpine AS builder
 RUN node --version
 
 FROM node

@@ -5,7 +5,7 @@ participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Getting started
 
-You need Python 3.10+ and `make`.
+You need Python 3.11+ and `make`.
 
 ```sh
 make setup   # git hooks (gitleaks) + pre-commit
