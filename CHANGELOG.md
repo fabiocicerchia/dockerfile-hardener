@@ -4,6 +4,25 @@ All notable changes to this project are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/fabiocicerchia/dockerfile-hardener/compare/v1.0.1...v2.0.0) (2026-11-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* drop Python 3.10, which reached end of life ([#155](https://github.com/fabiocicerchia/dockerfile-hardener/issues/155))
+
+### Features
+
+* drop Python 3.10, which reached end of life ([#155](https://github.com/fabiocicerchia/dockerfile-hardener/issues/155)) ([703ba65](https://github.com/fabiocicerchia/dockerfile-hardener/commit/703ba653b2142980f5d0dda5ac002b9234c4697c))
+
+
+### Bug Fixes
+
+* 3 issues found by code-atlas (ci that cannot fail) ([#152](https://github.com/fabiocicerchia/dockerfile-hardener/issues/152)) ([8e8ef63](https://github.com/fabiocicerchia/dockerfile-hardener/commit/8e8ef63147cca4138563aa5156a3bc478802d12e))
+* 3 issues found by code-atlas (code design) ([#154](https://github.com/fabiocicerchia/dockerfile-hardener/issues/154)) ([7b05c8c](https://github.com/fabiocicerchia/dockerfile-hardener/commit/7b05c8c7610a1f7e29e5a4d6ba18a1a5ff07c243))
+* 9 issues found by code-atlas (test suites) ([#156](https://github.com/fabiocicerchia/dockerfile-hardener/issues/156)) ([f6933de](https://github.com/fabiocicerchia/dockerfile-hardener/commit/f6933de0e6a6c03fd2228fedf50cc1f800871ed4))
+* Update 3 dependencies in pyproject.toml ([#153](https://github.com/fabiocicerchia/dockerfile-hardener/issues/153)) ([2958924](https://github.com/fabiocicerchia/dockerfile-hardener/commit/2958924c3b9e2eb940ce2dcea59908803a1473df))
+
 ## [1.0.1](https://github.com/fabiocicerchia/dockerfile-hardener/compare/v1.0.0...v1.0.1) (2026-09-20)
 
 
