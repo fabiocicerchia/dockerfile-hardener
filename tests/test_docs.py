@@ -6,6 +6,9 @@ renamed in `hadofix.py` should fail here instead of leaving the docs wrong.
 
 import re
 import shlex
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -60,6 +63,26 @@ def test_the_documented_exit_codes_are_the_real_ones() -> None:
     assert EX_FINDINGS == 1
     assert "(66/69/74/77)" in ARCHITECTURE
     assert (EX_NOINPUT, EX_UNAVAILABLE, EX_IOERR, EX_NOPERM) == (66, 69, 74, 77)
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git is not installed")
+def test_the_documented_pipe_feeds_git_apply(tmp_path: Path) -> None:
+    """getting-started: JSON piped into `--from-json -`, and the diff on stdout goes into `git apply`."""
+    case = Path(__file__).parent / "golden" / "dl3015-no-install-recommends"
+    assert "pipe the first into `git apply`" in GETTING_STARTED
+    shutil.copy(case / "Dockerfile", tmp_path / "Dockerfile")
+    hadofix = subprocess.run(  # noqa: S603 — the interpreter running this suite, fixed arguments
+        [sys.executable, hadofix_module.__file__, "Dockerfile", "--from-json", "-"],
+        input=(case / "hadolint.json").read_text(),
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert hadofix.returncode == EX_FINDINGS, "an unapplied fix is still a finding"
+    assert "DL3015" in hadofix.stderr
+    subprocess.run(["git", "apply"], input=hadofix.stdout, cwd=tmp_path, text=True, check=True)  # noqa: S603, S607
+    assert "--no-install-recommends" in (tmp_path / "Dockerfile").read_text()
 
 
 @pytest.mark.parametrize("name", COMPONENTS)
