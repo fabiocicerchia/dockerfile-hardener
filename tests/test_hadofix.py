@@ -192,11 +192,11 @@ def test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer() -> No
 
 
 def test_an_init_in_the_entrypoint_answers_hf1003() -> None:
-    forking = Doc('FROM nginx:1.27\nUSER 10001\nCMD ["nginx", "-g", "daemon off;"]\n', Path("Dockerfile"))
+    forking = Doc('FROM nginx:1.31\nUSER 10001\nCMD ["nginx", "-g", "daemon off;"]\n', Path("Dockerfile"))
     assert [f.code for f in own_findings(forking)] == ["HF1003"]
 
     with_init = Doc(
-        'FROM nginx:1.27\nUSER 10001\nENTRYPOINT ["/sbin/tini", "--"]\nCMD ["nginx", "-g", "daemon off;"]\n',
+        'FROM nginx:1.31\nUSER 10001\nENTRYPOINT ["/sbin/tini", "--"]\nCMD ["nginx", "-g", "daemon off;"]\n',
         Path("Dockerfile"),
     )
     assert [f.code for f in own_findings(with_init)] == []
