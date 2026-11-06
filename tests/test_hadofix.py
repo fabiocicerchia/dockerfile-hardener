@@ -9,18 +9,25 @@ Regenerate them with `make golden` after a deliberate change.
 import io
 import os
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
+import hadofix as hadofix_module
 from hadofix import (
     APT,
     EX_FINDINGS,
     EX_NOINPUT,
     EX_OK,
     EX_UNAVAILABLE,
+    PIP,
     Doc,
     Finding,
+    Fixed,
+    HadolintError,
+    Skipped,
     fix_apt_lists,
     fix_base_pin,
     fix_pin_packages,
@@ -29,6 +36,7 @@ from hadofix import (
     parse_findings,
     parse_ref,
     resolve_digest,
+    run_hadolint,
 )
 
 GOLDEN = Path(__file__).parent / "golden"
@@ -173,6 +181,48 @@ def test_a_version_is_taken_from_evidence_never_invented() -> None:
     assert doc.text.count("curl") == 1, "a refused fix leaves the file alone"
 
 
+def test_a_requirements_file_is_evidence_only_when_it_is_copied_in(tmp_path: Path) -> None:
+    """The DL3013 golden case pins from requirements.txt because it COPYs it, not because it sits nearby."""
+    pinned = Path(shutil.copy(GOLDEN / "dl3013-pip-pin" / "requirements.txt", tmp_path)).read_text().strip()
+
+    copied = Doc("FROM python:3.12-slim\nCOPY requirements.txt /tmp/\nRUN pip install flask\n", tmp_path / "Dockerfile")
+    assert isinstance(fix_pin_packages(PIP, copied, Finding("DL3013", 3, "warning", "")), Fixed)
+    assert f"RUN pip install {pinned}\n" in copied.text
+
+    beside = Doc("FROM python:3.12-slim\nRUN pip install flask\n", tmp_path / "Dockerfile")
+    refusal = fix_pin_packages(PIP, beside, Finding("DL3013", 2, "warning", ""))
+    assert isinstance(refusal, Skipped)
+    assert "`flask`" in refusal.why
+    assert "==" not in beside.text, "a refused fix leaves the file alone"
+
+    other = Doc("FROM python:3.12-slim\nCOPY requirements.txt /tmp/\nRUN pip install django\n", tmp_path / "Dockerfile")
+    refusal = fix_pin_packages(PIP, other, Finding("DL3013", 3, "warning", ""))
+    assert isinstance(refusal, Skipped)
+    assert "`django`" in refusal.why
+
+
+def test_the_pip_pin_comes_from_the_build_context_on_disk(tmp_path: Path) -> None:
+    """A real process run from elsewhere still reads requirements.txt beside the Dockerfile, not in its cwd."""
+    case = GOLDEN / "dl3013-pip-pin"
+    context = tmp_path / "app"
+    context.mkdir()
+    for name in ("Dockerfile", "requirements.txt", "hadolint.json"):
+        shutil.copy(case / name, context / name)
+
+    argv = ["app/Dockerfile", "--from-json", "app/hadolint.json", "--write"]
+    run = subprocess.run(  # noqa: S603 — the interpreter running this suite, fixed arguments
+        [sys.executable, str(Path(hadofix_module.__file__)), *argv],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert run.returncode == EX_OK, run.stderr
+    assert "fixed 1 finding" in run.stderr
+    pinned = (context / "requirements.txt").read_text().strip()
+    assert f"RUN pip install --no-cache-dir {pinned}\n" in (context / "Dockerfile").read_text()
+
+
 def test_a_stage_is_never_evidence_for_itself() -> None:
     """`FROM python:latest` is the finding, so it cannot also be the answer."""
     doc = Doc("FROM python:latest\n", Path("Dockerfile"))
@@ -251,6 +301,26 @@ def test_parse_findings_ignores_what_it_does_not_understand() -> None:
     assert parse_findings('[7, {"code": "DL3000", "line": "x"}]') == [Finding("DL3000", 1, "warning", "")]
 
 
+@pytest.mark.skipif(os.name != "posix", reason="the stand-in hadolint is a shell script")
+def test_run_hadolint_asks_a_real_process_for_json(tmp_path: Path) -> None:
+    """The arguments hadolint gets are the contract: JSON out, the one Dockerfile in."""
+    engine = tmp_path / "hadolint"
+    engine.write_text('#!/bin/sh\necho "$@"\nexit 1\n')
+    engine.chmod(0o755)
+    dockerfile = tmp_path / "Dockerfile"
+    assert run_hadolint(str(engine), dockerfile) == f"--format json {dockerfile}\n"
+
+
+@pytest.mark.skipif(os.name != "posix", reason="the stand-in hadolint is a shell script")
+def test_run_hadolint_reports_an_engine_failure(tmp_path: Path) -> None:
+    """Above exit 1 hadolint itself broke; its stderr is the message, not a finding."""
+    engine = tmp_path / "hadolint"
+    engine.write_text("#!/bin/sh\necho 'parse error' >&2\nexit 2\n")
+    engine.chmod(0o755)
+    with pytest.raises(HadolintError, match="exited 2: parse error"):
+        run_hadolint(str(engine), tmp_path / "Dockerfile")
+
+
 # --------------------------------------------------------------------------
 # --resolve-digests is the only part that touches the network.
 # --------------------------------------------------------------------------
@@ -285,6 +355,42 @@ def test_resolve_digest_uses_the_injected_fetch() -> None:
 # --------------------------------------------------------------------------
 # With the real engine on PATH, end to end.
 # --------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(os.name != "posix", reason="the stand-in hadolint is a shell script")
+def test_the_cli_runs_hadolint_and_writes_the_fix(tmp_path: Path) -> None:
+    """The whole journey in a real process: run the engine, print the diff, --write, re-run clean.
+
+    hadolint is replaced by a script that answers with the golden JSON, so this
+    covers the subprocess hand-off on any machine, hadolint installed or not.
+    """
+    case = GOLDEN / "dl3015-no-install-recommends"
+    shutil.copy(case / "Dockerfile", tmp_path / "Dockerfile")
+    shutil.copy(case / "hadolint.json", tmp_path / "hadolint.json")
+    engine = tmp_path / "hadolint"
+    # hadolint exits 1 when it has findings; hadofix must treat that as normal.
+    engine.write_text(f"#!/bin/sh\ncat '{tmp_path / 'hadolint.json'}'\nexit 1\n")
+    engine.chmod(0o755)
+
+    def hadofix(*argv: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(  # noqa: S603 — the interpreter running this suite, fixed arguments
+            [sys.executable, str(Path(hadofix_module.__file__)), "Dockerfile", "--hadolint", str(engine), *argv],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    first = hadofix("--write")
+    assert first.returncode == EX_OK
+    assert first.stdout == (case / "expected.diff").read_text()
+    assert "fixed 1 finding in Dockerfile: DL3015" in first.stderr
+    assert "wrote Dockerfile" in first.stderr
+    assert "--no-install-recommends" in (tmp_path / "Dockerfile").read_text()
+
+    (tmp_path / "hadolint.json").write_text("[]")
+    again = hadofix()
+    assert (again.returncode, again.stdout) == (EX_OK, ""), "the fixed file passes the gate"
 
 
 @pytest.mark.skipif(shutil.which("hadolint") is None, reason="hadolint is not installed")
