@@ -24,6 +24,7 @@ from hadofix import (
     EX_UNAVAILABLE,
     Doc,
     Finding,
+    HadolintError,
     fix_apt_lists,
     fix_base_pin,
     fix_pin_packages,
@@ -32,6 +33,7 @@ from hadofix import (
     parse_findings,
     parse_ref,
     resolve_digest,
+    run_hadolint,
 )
 
 GOLDEN = Path(__file__).parent / "golden"
@@ -252,6 +254,26 @@ def test_unreadable_json_exits_ex_unavailable(tmp_path: Path, capsys: pytest.Cap
 def test_parse_findings_ignores_what_it_does_not_understand() -> None:
     assert parse_findings("[]") == []
     assert parse_findings('[7, {"code": "DL3000", "line": "x"}]') == [Finding("DL3000", 1, "warning", "")]
+
+
+@pytest.mark.skipif(os.name != "posix", reason="the stand-in hadolint is a shell script")
+def test_run_hadolint_asks_a_real_process_for_json(tmp_path: Path) -> None:
+    """The arguments hadolint gets are the contract: JSON out, the one Dockerfile in."""
+    engine = tmp_path / "hadolint"
+    engine.write_text('#!/bin/sh\necho "$@"\nexit 1\n')
+    engine.chmod(0o755)
+    dockerfile = tmp_path / "Dockerfile"
+    assert run_hadolint(str(engine), dockerfile) == f"--format json {dockerfile}\n"
+
+
+@pytest.mark.skipif(os.name != "posix", reason="the stand-in hadolint is a shell script")
+def test_run_hadolint_reports_an_engine_failure(tmp_path: Path) -> None:
+    """Above exit 1 hadolint itself broke; its stderr is the message, not a finding."""
+    engine = tmp_path / "hadolint"
+    engine.write_text("#!/bin/sh\necho 'parse error' >&2\nexit 2\n")
+    engine.chmod(0o755)
+    with pytest.raises(HadolintError, match="exited 2: parse error"):
+        run_hadolint(str(engine), tmp_path / "Dockerfile")
 
 
 # --------------------------------------------------------------------------
