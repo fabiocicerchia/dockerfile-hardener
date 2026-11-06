@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Python 3.10+
+- Python 3.11+
 - [hadolint](https://github.com/hadolint/hadolint#install) on `PATH` — it is
   the engine hadofix fixes for, not a bundled copy
 - [`pipx`](https://pipx.pypa.io/) (recommended) or `pip`
