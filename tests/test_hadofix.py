@@ -201,6 +201,28 @@ def test_a_requirements_file_is_evidence_only_when_it_is_copied_in(tmp_path: Pat
     assert "`django`" in refusal.why
 
 
+def test_the_pip_pin_comes_from_the_build_context_on_disk(tmp_path: Path) -> None:
+    """A real process run from elsewhere still reads requirements.txt beside the Dockerfile, not in its cwd."""
+    case = GOLDEN / "dl3013-pip-pin"
+    context = tmp_path / "app"
+    context.mkdir()
+    for name in ("Dockerfile", "requirements.txt", "hadolint.json"):
+        shutil.copy(case / name, context / name)
+
+    argv = ["app/Dockerfile", "--from-json", "app/hadolint.json", "--write"]
+    run = subprocess.run(  # noqa: S603 — the interpreter running this suite, fixed arguments
+        [sys.executable, str(Path(hadofix_module.__file__)), *argv],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert run.returncode == EX_OK, run.stderr
+    assert "fixed 1 finding" in run.stderr
+    pinned = (context / "requirements.txt").read_text().strip()
+    assert f"RUN pip install --no-cache-dir {pinned}\n" in (context / "Dockerfile").read_text()
+
+
 def test_a_stage_is_never_evidence_for_itself() -> None:
     """`FROM python:latest` is the finding, so it cannot also be the answer."""
     doc = Doc("FROM python:latest\n", Path("Dockerfile"))
