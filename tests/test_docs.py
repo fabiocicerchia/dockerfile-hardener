@@ -38,7 +38,7 @@ COMPONENTS = (
 
 def documented_commands() -> list[list[str]]:
     """Every `hadofix ...` invocation in a getting-started code block, comments and pipes dropped."""
-    commands = []
+    commands: list[list[str]] = []
     for block in re.findall(r"```(?:sh|yaml)\n(.*?)```", GETTING_STARTED, re.S):
         for line in block.splitlines():
             command = line.split("#", 1)[0].split("|")[-1]
@@ -81,7 +81,7 @@ def test_the_documented_pipe_feeds_git_apply(tmp_path: Path) -> None:
     )
     assert hadofix.returncode == EX_FINDINGS, "an unapplied fix is still a finding"
     assert "DL3015" in hadofix.stderr
-    subprocess.run(["git", "apply"], input=hadofix.stdout, cwd=tmp_path, text=True, check=True)  # noqa: S603, S607
+    subprocess.run(["git", "apply"], input=hadofix.stdout, cwd=tmp_path, text=True, check=True)  # noqa: S607
     assert "--no-install-recommends" in (tmp_path / "Dockerfile").read_text()
 
 

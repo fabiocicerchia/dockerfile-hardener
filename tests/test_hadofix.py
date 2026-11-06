@@ -183,11 +183,11 @@ def test_a_version_is_taken_from_evidence_never_invented() -> None:
 
 def test_a_requirements_file_is_evidence_only_when_it_is_copied_in(tmp_path: Path) -> None:
     """The DL3013 golden case pins from requirements.txt because it COPYs it, not because it sits nearby."""
-    shutil.copy(GOLDEN / "dl3013-pip-pin" / "requirements.txt", tmp_path)
+    pinned = Path(shutil.copy(GOLDEN / "dl3013-pip-pin" / "requirements.txt", tmp_path)).read_text().strip()
 
     copied = Doc("FROM python:3.12-slim\nCOPY requirements.txt /tmp/\nRUN pip install flask\n", tmp_path / "Dockerfile")
     assert isinstance(fix_pin_packages(PIP, copied, Finding("DL3013", 3, "warning", "")), Fixed)
-    assert "RUN pip install flask==3.0.3\n" in copied.text
+    assert f"RUN pip install {pinned}\n" in copied.text
 
     beside = Doc("FROM python:3.12-slim\nRUN pip install flask\n", tmp_path / "Dockerfile")
     refusal = fix_pin_packages(PIP, beside, Finding("DL3013", 2, "warning", ""))
