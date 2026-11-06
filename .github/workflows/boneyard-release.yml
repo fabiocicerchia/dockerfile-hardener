@@ -39,12 +39,17 @@ jobs:
           skip-unchanged: "false"
 
       - name: Post to boneyard
-        continue-on-error: true
         env:
           TOKEN: ${{ secrets.BONEYARD_TOKEN }}
           LABEL: PR #${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
+          # Fork and Dependabot pull requests get no repository secrets, so
+          # there is nothing to post with; skip rather than fail on a 401.
+          if [ -z "${TOKEN}" ]; then
+            echo "::notice::BONEYARD_TOKEN unavailable to this pull request; not posting"
+            exit 0
+          fi
           test -s sbom-diff-result.json
           curl --fail-with-body --silent --show-error \
             --retry 3 --retry-connrefused --max-time 60 \
