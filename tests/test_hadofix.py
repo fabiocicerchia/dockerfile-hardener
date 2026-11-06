@@ -22,9 +22,12 @@ from hadofix import (
     EX_NOINPUT,
     EX_OK,
     EX_UNAVAILABLE,
+    PIP,
     Doc,
     Finding,
+    Fixed,
     HadolintError,
+    Skipped,
     fix_apt_lists,
     fix_base_pin,
     fix_pin_packages,
@@ -176,6 +179,26 @@ def test_a_version_is_taken_from_evidence_never_invented() -> None:
     refusal = fix_pin_packages(APT, doc, Finding("DL3008", 2, "warning", ""))
     assert "`curl`" in refusal.why
     assert doc.text.count("curl") == 1, "a refused fix leaves the file alone"
+
+
+def test_a_requirements_file_is_evidence_only_when_it_is_copied_in(tmp_path: Path) -> None:
+    """The DL3013 golden case pins from requirements.txt because it COPYs it, not because it sits nearby."""
+    shutil.copy(GOLDEN / "dl3013-pip-pin" / "requirements.txt", tmp_path)
+
+    copied = Doc("FROM python:3.12-slim\nCOPY requirements.txt /tmp/\nRUN pip install flask\n", tmp_path / "Dockerfile")
+    assert isinstance(fix_pin_packages(PIP, copied, Finding("DL3013", 3, "warning", "")), Fixed)
+    assert "RUN pip install flask==3.0.3\n" in copied.text
+
+    beside = Doc("FROM python:3.12-slim\nRUN pip install flask\n", tmp_path / "Dockerfile")
+    refusal = fix_pin_packages(PIP, beside, Finding("DL3013", 2, "warning", ""))
+    assert isinstance(refusal, Skipped)
+    assert "`flask`" in refusal.why
+    assert "==" not in beside.text, "a refused fix leaves the file alone"
+
+    other = Doc("FROM python:3.12-slim\nCOPY requirements.txt /tmp/\nRUN pip install django\n", tmp_path / "Dockerfile")
+    refusal = fix_pin_packages(PIP, other, Finding("DL3013", 3, "warning", ""))
+    assert isinstance(refusal, Skipped)
+    assert "`django`" in refusal.why
 
 
 def test_a_stage_is_never_evidence_for_itself() -> None:
