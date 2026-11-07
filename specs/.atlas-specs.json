@@ -1,0 +1,949 @@
+{
+ "excluded": {
+  "dockerfile-hardener/hadofix": [
+   {
+    "candidate": "parse_ref splits registry host:port from tag",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "hadofix.py#parse_ref"
+   },
+   {
+    "candidate": "Comments inside a backslash continuation neither end nor join the instruction",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "hadofix.py#_instructions"
+   },
+   {
+    "candidate": "Line-number tracking so later fixes still hit the reported instruction after insertions",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "hadofix.py#Doc"
+   },
+   {
+    "candidate": "Findings applied bottom-up and outcomes reported in line order",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "hadofix.py#fix"
+   },
+   {
+    "candidate": "Base image already pinned to a digest is refused",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "hadofix.py#fix_base_pin"
+   },
+   {
+    "candidate": "FROM naming an earlier stage alias is refused as not an image",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "hadofix.py#fix_base_pin"
+   },
+   {
+    "candidate": "Reported line is not a FROM/RUN/CMD (fixer refusal messages)",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "hadofix.py#fix_pipefail"
+   },
+   {
+    "candidate": "Local paths, URLs and value-taking flags are never treated as package names",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "hadofix.py#Manager"
+   },
+   {
+    "candidate": "RUN that already removes apt lists is refused",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "hadofix.py#fix_apt_lists"
+   },
+   {
+    "candidate": "Command already in exec form is refused",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "hadofix.py#fix_exec_form"
+   },
+   {
+    "candidate": "Shell-script detection by shebang or .sh suffix",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "hadofix.py#_looks_like_a_shell_script"
+   },
+   {
+    "candidate": "Same reason printed once when two rules refuse on the same line",
+    "covered_by": "hadofix.exec-form.refuse-when-shell-needed",
+    "reason": "DUPLICATE_OF",
+    "source": "hadofix.py#render_report"
+   },
+   {
+    "candidate": "Unparseable list entries and non-integer lines default to line 1 / warning",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "hadofix.py#parse_findings"
+   },
+   {
+    "candidate": "Docker Hub token and manifest lookup, Docker Hub only, https only",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "hadofix_io.py#resolve_digest"
+   },
+   {
+    "candidate": "hadolint invoked as `--format json <Dockerfile>`, exit above 1 is an engine failure",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "hadofix_io.py#run_hadolint"
+   },
+   {
+    "candidate": "Golden fixture harness and HADOFIX_UPDATE_GOLDEN regeneration",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "tests/test_hadofix.py#test_golden"
+   }
+  ],
+  "dockerfile-hardener/hadofix-io": [
+   {
+    "candidate": "hadolint is invoked as `hadolint --format json <Dockerfile>` with no shell",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "hadofix_io.py#run_hadolint"
+   },
+   {
+    "candidate": "OSError while launching a resolved hadolint binary is reported as \"<binary>: <strerror>\"",
+    "covered_by": "finding-intake.hadolint-run.unavailable-engine-stops-the-run",
+    "reason": "TRIVIAL",
+    "source": "hadofix_io.py#run_hadolint"
+   },
+   {
+    "candidate": "hadolint failure message falls back to stdout when stderr is empty",
+    "covered_by": "finding-intake.hadolint-run.unavailable-engine-stops-the-run",
+    "reason": "TRIVIAL",
+    "source": "hadofix_io.py#run_hadolint"
+   },
+   {
+    "candidate": "Anonymous pull token fetched from auth.docker.io before the manifest request",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "hadofix_io.py#resolve_digest"
+   },
+   {
+    "candidate": "Fetcher refuses non-https URLs",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "hadofix_io.py#_http_get"
+   },
+   {
+    "candidate": "10-second HTTP timeout on registry requests",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "hadofix_io.py#_http_get"
+   },
+   {
+    "candidate": "Fetcher Protocol and injectable fetch for tests",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "hadofix_io.py#Fetcher"
+   }
+  ],
+  "dockerfile-hardener/install": [
+   {
+    "candidate": "Script runs under bash with strict mode (set -euo pipefail)",
+    "covered_by": "",
+    "reason": "INTERNAL_MECHANISM",
+    "source": "install.sh#install.sh"
+   },
+   {
+    "candidate": "Usage comment documenting the curl | bash invocation",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "install.sh#install.sh"
+   }
+  ],
+  "dockerfile-hardener/makefile": [
+   {
+    "candidate": "make help lists every target with its ## description",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "Makefile#help"
+   },
+   {
+    "candidate": "make setup installs the pre-commit hook",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "Makefile#setup"
+   },
+   {
+    "candidate": "make install installs the package with pip",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Makefile#install"
+   },
+   {
+    "candidate": "make dev does an editable install with the dev extras",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "Makefile#dev"
+   },
+   {
+    "candidate": "make lint runs every pre-commit hook on every file (CLAUDE.md still says it runs ruff only)",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Makefile#lint"
+   },
+   {
+    "candidate": "make test runs pytest -q",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "Makefile#test"
+   },
+   {
+    "candidate": "make golden regenerates the golden fixtures with hadolint, then reruns pytest with HADOFIX_UPDATE_GOLDEN=1",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "Makefile#golden"
+   },
+   {
+    "candidate": "make build builds the sdist and wheel",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": "Makefile#build"
+   },
+   {
+    "candidate": "make run prints hadofix --help",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "Makefile#run"
+   },
+   {
+    "candidate": "make format rewrites sources with ruff format",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "Makefile#format"
+   },
+   {
+    "candidate": "make analyze type-checks with basedpyright",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "Makefile#analyze"
+   }
+  ],
+  "dockerfile-hardener/mdl-style": [
+   {
+    "candidate": "Every markdownlint rule is enabled for the project's docs",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": ".mdl_style.rb#all"
+   },
+   {
+    "candidate": "Markdown lines may be up to 120 characters (MD013) so README Dockerfile snippets fit",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": ".mdl_style.rb#MD013"
+   },
+   {
+    "candidate": "Ordered lists must be numbered sequentially 1. 2. 3. (MD029 ordered style)",
+    "covered_by": "",
+    "reason": "TECH_BUILD",
+    "source": ".mdl_style.rb#MD029"
+   }
+  ],
+  "examples/basic": [
+   {
+    "candidate": "The basic example Dockerfile carries typical findings (python:latest base, apt-get install without --no-install-recommends or list cleanup, unpinned curl, curl|tar pipe without pipefail, no USER, shell-form CMD running gunicorn)",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "examples/basic/Dockerfile"
+   },
+   {
+    "candidate": "The example entrypoint.sh runs its final command as \"$@\" without exec, demonstrating the HF1002 entrypoint check",
+    "covered_by": "",
+    "reason": "TECH_DEVTOOLING",
+    "source": "examples/basic/entrypoint.sh"
+   },
+   {
+    "candidate": "Running hadofix on the example refuses to choose a version for the base image or curl and lists those findings instead (per examples/basic/README.md)",
+    "covered_by": "Behaviour belongs to image-pinning/base-image-pin and image-pinning/os-package-pin; no code or test in this module runs hadofix on the example",
+    "reason": "UNVERIFIABLE",
+    "source": "examples/basic/README.md"
+   },
+   {
+    "candidate": "Running hadofix on the example does not rewrite entrypoint.sh and does not install an init for gunicorn; both are listed for the reader",
+    "covered_by": "Behaviour belongs to runtime-hardening/entrypoint-scripts and runtime-hardening/init-process; nothing here enforces or tests it",
+    "reason": "UNVERIFIABLE",
+    "source": "examples/basic/README.md"
+   },
+   {
+    "candidate": "Golden fixture tests/golden/hf1002-no-exec/entrypoint.sh: an entrypoint ending in \"$@\" without exec",
+    "covered_by": "runtime-hardening/entrypoint-scripts (HF1002 rule owned by the fixer module)",
+    "reason": "TECH_DEVTOOLING",
+    "source": "tests/golden/hf1002-no-exec/entrypoint.sh"
+   }
+  ]
+ },
+ "lifted": {
+  "dockerfile-hardener/hadofix": [],
+  "dockerfile-hardener/hadofix-io": [],
+  "dockerfile-hardener/install": [],
+  "dockerfile-hardener/makefile": [],
+  "dockerfile-hardener/mdl-style": [],
+  "examples/basic": []
+ },
+ "retired": [],
+ "scenarios": {
+  "build-hygiene.apt-cleanup.001": {
+   "file": "specs/build-hygiene/apt-cleanup/build-hygiene-fixes.feature",
+   "fingerprint": "0571c45da0c3",
+   "human": false,
+   "rule": "hadofix.hygiene.pipefail-shell",
+   "source": "hadofix.py#fix_pipefail",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden",
+    "tests/test_hadofix.py#test_pipefail_picks_the_shell_the_base_image_has"
+   ]
+  },
+  "build-hygiene.apt-cleanup.002": {
+   "file": "specs/build-hygiene/apt-cleanup/build-hygiene-fixes.feature",
+   "fingerprint": "af69e3d6690b",
+   "human": false,
+   "rule": "hadofix.hygiene.apt-lists-same-layer",
+   "source": "hadofix.py#fix_apt_lists",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden",
+    "tests/test_hadofix.py#test_apt_cleanup_joins_a_multi_line_run"
+   ]
+  },
+  "build-hygiene.apt-cleanup.003": {
+   "file": "specs/build-hygiene/apt-cleanup/build-hygiene-fixes.feature",
+   "fingerprint": "959ff0f06514",
+   "human": false,
+   "rule": "hadofix.hygiene.no-install-recommends",
+   "source": "hadofix.py#fix_no_install_recommends",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden",
+    "tests/test_hadofix.py#test_write_applies_the_diff"
+   ]
+  },
+  "developer-tooling.installation.001": {
+   "file": "specs/developer-tooling/installation/one-line-installer.feature",
+   "fingerprint": "eb165e764305",
+   "human": false,
+   "rule": "installation.installer.prefers-pipx-falls-back-to-user-pip",
+   "source": "install.sh#install.sh",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "developer-tooling.installation.002": {
+   "file": "specs/developer-tooling/installation/one-line-installer.feature",
+   "fingerprint": "eb165e764305",
+   "human": false,
+   "rule": "installation.installer.failure-reports-no-success",
+   "source": "install.sh#install.sh",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "finding-intake.hadolint-run.001": {
+   "file": "specs/finding-intake/hadolint-run/running-hadolint.feature",
+   "fingerprint": "e9db833229a3",
+   "human": false,
+   "rule": "finding-intake.hadolint-run.findings-exit-is-a-normal-run",
+   "source": "hadofix_io.py#run_hadolint",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_the_cli_runs_hadolint_and_writes_the_fix",
+   "tests": [
+    "tests/test_hadofix.py#test_the_cli_runs_hadolint_and_writes_the_fix",
+    "tests/test_hadofix.py#test_run_hadolint_asks_a_real_process_for_json"
+   ]
+  },
+  "finding-intake.hadolint-run.002": {
+   "file": "specs/finding-intake/hadolint-run/running-hadolint.feature",
+   "fingerprint": "e9db833229a3",
+   "human": false,
+   "rule": "finding-intake.hadolint-run.unavailable-engine-stops-the-run",
+   "source": "hadofix_io.py#run_hadolint",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_a_missing_hadolint_is_not_a_finding",
+   "tests": [
+    "tests/test_hadofix.py#test_a_missing_hadolint_is_not_a_finding",
+    "tests/test_hadofix.py#test_run_hadolint_reports_an_engine_failure"
+   ]
+  },
+  "finding-intake.stdin-findings.001": {
+   "file": "specs/finding-intake/stdin-findings/supplying-findings.feature",
+   "fingerprint": "9ded374fab65",
+   "human": false,
+   "rule": "hadofix.intake.json-from-stdin-or-file",
+   "source": "hadofix.py#_findings_payload",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_reads_hadolint_json_from_stdin",
+   "tests": [
+    "tests/test_hadofix.py#test_reads_hadolint_json_from_stdin",
+    "tests/test_hadofix.py#test_unknown_rules_are_listed_not_guessed_at"
+   ]
+  },
+  "finding-intake.stdin-findings.002": {
+   "file": "specs/finding-intake/stdin-findings/supplying-findings.feature",
+   "fingerprint": "384bb8a820f4",
+   "human": false,
+   "rule": "hadofix.intake.untrusted-json-refused",
+   "source": "hadofix.py#parse_findings",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_unreadable_json_exits_ex_unavailable",
+   "tests": [
+    "tests/test_hadofix.py#test_unreadable_json_exits_ex_unavailable"
+   ]
+  },
+  "fix-output.cli-exit.001": {
+   "file": "specs/fix-output/cli-exit/cli-exit-codes.feature",
+   "fingerprint": "de7816d20633",
+   "human": false,
+   "rule": "hadofix.cli.exit-status",
+   "source": "hadofix.py#main",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden",
+    "tests/test_hadofix.py#test_missing_file_exits_ex_noinput",
+    "tests/test_hadofix.py#test_a_missing_hadolint_is_not_a_finding",
+    "tests/test_hadofix.py#test_the_cli_runs_hadolint_and_writes_the_fix"
+   ]
+  },
+  "fix-output.cli-exit.002": {
+   "file": "specs/fix-output/cli-exit/cli-exit-codes.feature",
+   "fingerprint": "de7816d20633",
+   "human": false,
+   "rule": "hadofix.cli.read-failure-message",
+   "source": "hadofix.py#main",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_missing_file_exits_ex_noinput",
+   "tests": [
+    "tests/test_hadofix.py#test_missing_file_exits_ex_noinput"
+   ]
+  },
+  "fix-output.diff-and-write.001": {
+   "file": "specs/fix-output/diff-and-write/diff-and-write.feature",
+   "fingerprint": "de7816d20633",
+   "human": false,
+   "rule": "hadofix.output.diff-without-write",
+   "source": "hadofix.py#main",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_nothing_is_written_without_write",
+   "tests": [
+    "tests/test_hadofix.py#test_nothing_is_written_without_write",
+    "tests/test_hadofix.py#test_golden"
+   ]
+  },
+  "fix-output.diff-and-write.002": {
+   "file": "specs/fix-output/diff-and-write/diff-and-write.feature",
+   "fingerprint": "de7816d20633",
+   "human": false,
+   "rule": "hadofix.output.write-applies",
+   "source": "hadofix.py#main",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_write_applies_the_diff",
+   "tests": [
+    "tests/test_hadofix.py#test_write_applies_the_diff",
+    "tests/test_hadofix.py#test_the_cli_runs_hadolint_and_writes_the_fix"
+   ]
+  },
+  "fix-output.diff-and-write.003": {
+   "file": "specs/fix-output/diff-and-write/diff-and-write.feature",
+   "fingerprint": "758910889104",
+   "human": false,
+   "rule": "hadofix.output.every-hunk-explained",
+   "source": "hadofix.py#comment_for",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden"
+   ]
+  },
+  "fix-output.diff-and-write.004": {
+   "file": "specs/fix-output/diff-and-write/diff-and-write.feature",
+   "fingerprint": "aebdd6154d18",
+   "human": false,
+   "rule": "hadofix.output.idempotent",
+   "source": "hadofix.py#own_findings",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_our_own_rules_are_idempotent",
+   "tests": [
+    "tests/test_hadofix.py#test_our_own_rules_are_idempotent",
+    "tests/test_hadofix.py#test_the_cli_runs_hadolint_and_writes_the_fix",
+    "tests/test_hadofix.py#test_hadolint_drives_one_pass_to_clean"
+   ]
+  },
+  "fix-output.report.001": {
+   "file": "specs/fix-output/report/run-report.feature",
+   "fingerprint": "03126d6a7c10",
+   "human": false,
+   "rule": "hadofix.report.fixed-summary",
+   "source": "hadofix.py#render_report",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden"
+   ]
+  },
+  "fix-output.report.002": {
+   "file": "specs/fix-output/report/run-report.feature",
+   "fingerprint": "66e593eaafe0",
+   "human": false,
+   "rule": "hadofix.report.unfixable-listed-untouched",
+   "source": "hadofix.py#fix",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_unknown_rules_are_listed_not_guessed_at",
+   "tests": [
+    "tests/test_hadofix.py#test_unknown_rules_are_listed_not_guessed_at"
+   ]
+  },
+  "fix-output.report.003": {
+   "file": "specs/fix-output/report/run-report.feature",
+   "fingerprint": "03126d6a7c10",
+   "human": false,
+   "rule": "hadofix.report.clean-file",
+   "source": "hadofix.py#render_report",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden"
+   ]
+  },
+  "fix-output.rule-config.001": {
+   "file": "specs/fix-output/rule-config/rule-selection.feature",
+   "fingerprint": "66e593eaafe0",
+   "human": false,
+   "rule": "hadofix.rules.only-reported-findings-fixed",
+   "source": "hadofix.py#fix",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_our_own_rules_are_idempotent",
+   "tests": [
+    "tests/test_hadofix.py#test_our_own_rules_are_idempotent"
+   ]
+  },
+  "fix-output.rule-config.002": {
+   "file": "specs/fix-output/rule-config/rule-selection.feature",
+   "fingerprint": "aebdd6154d18",
+   "human": false,
+   "rule": "hadofix.rules.own-rules-not-switchable",
+   "source": "hadofix.py#own_findings",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "fix-output.rule-config.003": {
+   "file": "specs/fix-output/rule-config/rule-selection.feature",
+   "fingerprint": "66e593eaafe0",
+   "human": false,
+   "rule": "hadofix.rules.one-defect-one-fix",
+   "source": "hadofix.py#fix",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden"
+   ]
+  },
+  "image-pinning.base-image-pin.001": {
+   "file": "specs/image-pinning/base-image-pin/base-image-pinning.feature",
+   "fingerprint": "d380442e2290",
+   "human": false,
+   "rule": "hadofix.base-pin.from-another-stage",
+   "source": "hadofix.py#fix_base_pin",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden"
+   ]
+  },
+  "image-pinning.base-image-pin.002": {
+   "file": "specs/image-pinning/base-image-pin/base-image-pinning.feature",
+   "fingerprint": "d380442e2290",
+   "human": false,
+   "rule": "hadofix.base-pin.refuses-without-evidence",
+   "source": "hadofix.py#fix_base_pin",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden",
+    "tests/test_hadofix.py#test_a_stage_is_never_evidence_for_itself",
+    "tests/test_hadofix.py#test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer"
+   ]
+  },
+  "image-pinning.base-image-pin.003": {
+   "file": "specs/image-pinning/base-image-pin/base-image-pinning.feature",
+   "fingerprint": "f547b9169796",
+   "human": false,
+   "rule": "hadofix.base-pin.digest-on-request",
+   "source": "hadofix.py#_resolve_base",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer",
+   "tests": [
+    "tests/test_hadofix.py#test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer"
+   ]
+  },
+  "image-pinning.digest-lookup.001": {
+   "file": "specs/image-pinning/digest-lookup/docker-hub-digest-lookup.feature",
+   "fingerprint": "de7816d20633",
+   "human": false,
+   "rule": "image-pinning.digest-lookup.network-only-on-opt-in",
+   "source": "hadofix.py#main",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer",
+   "tests": [
+    "tests/test_hadofix.py#test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer",
+    "tests/test_hadofix.py#test_a_stage_is_never_evidence_for_itself"
+   ]
+  },
+  "image-pinning.digest-lookup.002": {
+   "file": "specs/image-pinning/digest-lookup/docker-hub-digest-lookup.feature",
+   "fingerprint": "f3f6633f467d",
+   "human": false,
+   "rule": "image-pinning.digest-lookup.pins-docker-hub-digest",
+   "source": "hadofix_io.py#resolve_digest",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_resolve_digest_uses_the_injected_fetch",
+   "tests": [
+    "tests/test_hadofix.py#test_resolve_digest_uses_the_injected_fetch",
+    "tests/test_hadofix.py#test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer"
+   ]
+  },
+  "image-pinning.digest-lookup.003": {
+   "file": "specs/image-pinning/digest-lookup/docker-hub-digest-lookup.feature",
+   "fingerprint": "f3f6633f467d",
+   "human": false,
+   "rule": "image-pinning.digest-lookup.other-registries-never-queried",
+   "source": "hadofix_io.py#resolve_digest",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_resolve_digest_returns_none_for_a_qualified_registry",
+   "tests": [
+    "tests/test_hadofix.py#test_resolve_digest_returns_none_for_a_qualified_registry"
+   ]
+  },
+  "image-pinning.digest-lookup.004": {
+   "file": "specs/image-pinning/digest-lookup/docker-hub-digest-lookup.feature",
+   "fingerprint": "f3f6633f467d",
+   "human": false,
+   "rule": "image-pinning.digest-lookup.failed-lookup-leaves-finding",
+   "source": "hadofix_io.py#resolve_digest",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "image-pinning.os-package-pin.001": {
+   "file": "specs/image-pinning/os-package-pin/package-version-pinning.feature",
+   "fingerprint": "06aed927972b",
+   "human": false,
+   "rule": "hadofix.package-pin.from-another-stage",
+   "source": "hadofix.py#fix_pin_packages",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden"
+   ]
+  },
+  "image-pinning.os-package-pin.002": {
+   "file": "specs/image-pinning/os-package-pin/package-version-pinning.feature",
+   "fingerprint": "58ce9cf9b251",
+   "human": false,
+   "rule": "hadofix.package-pin.copied-requirements-are-evidence",
+   "source": "hadofix.py#_requirements_pins",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden",
+    "tests/test_hadofix.py#test_a_requirements_file_is_evidence_only_when_it_is_copied_in",
+    "tests/test_hadofix.py#test_the_pip_pin_comes_from_the_build_context_on_disk"
+   ]
+  },
+  "image-pinning.os-package-pin.003": {
+   "file": "specs/image-pinning/os-package-pin/package-version-pinning.feature",
+   "fingerprint": "06aed927972b",
+   "human": false,
+   "rule": "hadofix.package-pin.refuses-unknown-versions",
+   "source": "hadofix.py#fix_pin_packages",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_a_version_is_taken_from_evidence_never_invented",
+   "tests": [
+    "tests/test_hadofix.py#test_a_version_is_taken_from_evidence_never_invented",
+    "tests/test_hadofix.py#test_a_requirements_file_is_evidence_only_when_it_is_copied_in"
+   ]
+  },
+  "runtime-hardening.entrypoint-scripts.001": {
+   "file": "specs/runtime-hardening/entrypoint-scripts/signal-and-pid1-checks.feature",
+   "fingerprint": "922a9758b7b7",
+   "human": false,
+   "rule": "hadofix.pid1.entrypoint-script-must-exec",
+   "source": "hadofix.py#_entrypoint_script_finding",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden",
+    "tests/test_hadofix.py#test_a_script_copied_with_the_build_context_is_still_found"
+   ]
+  },
+  "runtime-hardening.entrypoint-scripts.002": {
+   "file": "specs/runtime-hardening/entrypoint-scripts/signal-and-pid1-checks.feature",
+   "fingerprint": "922a9758b7b7",
+   "human": false,
+   "rule": "hadofix.pid1.exec-script-is-quiet",
+   "source": "hadofix.py#_entrypoint_script_finding",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_an_entrypoint_script_that_execs_answers_hf1002",
+   "tests": [
+    "tests/test_hadofix.py#test_an_entrypoint_script_that_execs_answers_hf1002"
+   ]
+  },
+  "runtime-hardening.entrypoint-scripts.003": {
+   "file": "specs/runtime-hardening/entrypoint-scripts/signal-and-pid1-checks.feature",
+   "fingerprint": "2bd9890f27fd",
+   "human": false,
+   "rule": "hadofix.pid1.forking-process-needs-init",
+   "source": "hadofix.py#_init_finding",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden",
+    "tests/test_hadofix.py#test_an_init_in_the_entrypoint_answers_hf1003"
+   ]
+  },
+  "runtime-hardening.exec-form.001": {
+   "file": "specs/runtime-hardening/exec-form/exec-form-commands.feature",
+   "fingerprint": "b6a4d203b611",
+   "human": false,
+   "rule": "hadofix.exec-form.rewrite-plain-command",
+   "source": "hadofix.py#fix_exec_form",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden"
+   ]
+  },
+  "runtime-hardening.exec-form.002": {
+   "file": "specs/runtime-hardening/exec-form/exec-form-commands.feature",
+   "fingerprint": "b6a4d203b611",
+   "human": false,
+   "rule": "hadofix.exec-form.refuse-when-shell-needed",
+   "source": "hadofix.py#fix_exec_form",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden"
+   ]
+  },
+  "runtime-hardening.non-root-user.001": {
+   "file": "specs/runtime-hardening/non-root-user/non-root-user.feature",
+   "fingerprint": "222254cf7eb4",
+   "human": false,
+   "rule": "hadofix.user.root-replaced-by-uid",
+   "source": "hadofix.py#fix_nonroot_user",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden"
+   ]
+  },
+  "runtime-hardening.non-root-user.002": {
+   "file": "specs/runtime-hardening/non-root-user/non-root-user.feature",
+   "fingerprint": "e74762436ccc",
+   "human": false,
+   "rule": "hadofix.user.root-by-default-flagged-and-fixed",
+   "source": "hadofix.py#_root_default_finding",
+   "status": "verified",
+   "test": "tests/test_hadofix.py#test_golden",
+   "tests": [
+    "tests/test_hadofix.py#test_golden"
+   ]
+  },
+  "runtime-hardening.non-root-user.003": {
+   "file": "specs/runtime-hardening/non-root-user/non-root-user.feature",
+   "fingerprint": "222254cf7eb4",
+   "human": false,
+   "rule": "hadofix.user.chosen-user-kept",
+   "source": "hadofix.py#fix_nonroot_user",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  }
+ },
+ "taxonomy": {
+  "domains": [
+   {
+    "areas": [
+     {
+      "description": "Calling the hadolint binary on a Dockerfile and capturing its JSON findings, or failing clearly when it is missing or broken.",
+      "slug": "hadolint-run",
+      "title": "Running hadolint"
+     },
+     {
+      "description": "Accepting hadolint JSON piped in on stdin instead of running hadolint.",
+      "slug": "stdin-findings",
+      "title": "Findings from stdin"
+     },
+     {
+      "description": "Turning hadolint JSON into findings and rejecting malformed input.",
+      "slug": "finding-parsing",
+      "title": "Finding parsing"
+     },
+     {
+      "description": "Splitting a Dockerfile into instructions, stages, continuation lines and image references.",
+      "slug": "dockerfile-reading",
+      "title": "Dockerfile reading"
+     }
+    ],
+    "description": "How hadofix gets hadolint's findings and decides which ones to act on.",
+    "slug": "finding-intake",
+    "title": "Finding intake"
+   },
+   {
+    "areas": [
+     {
+      "description": "Fixing untagged or :latest base images (DL3006, DL3007) by resolving a tag or digest, or refusing when there is no evidence.",
+      "slug": "base-image-pin",
+      "title": "Base image pinning"
+     },
+     {
+      "description": "Asking Docker Hub for the digest of an image tag so a base image can be pinned to it.",
+      "slug": "digest-lookup",
+      "title": "Registry digest lookup"
+     },
+     {
+      "description": "Pinning apt and apk package versions (DL3008, DL3018) from versions already known elsewhere in the Dockerfile.",
+      "slug": "os-package-pin",
+      "title": "OS package pinning"
+     },
+     {
+      "description": "Pinning pip installs (DL3013) from other stages or a copied requirements file.",
+      "slug": "python-package-pin",
+      "title": "Python package pinning"
+     }
+    ],
+    "description": "Making builds reproducible by pinning base images and installed packages from evidence.",
+    "slug": "image-pinning",
+    "title": "Image and package pinning"
+   },
+   {
+    "areas": [
+     {
+      "description": "Adding pipefail to the shell so piped RUN commands fail loudly (DL4006).",
+      "slug": "pipefail",
+      "title": "Pipe failure safety"
+     },
+     {
+      "description": "Removing apt lists after install to shrink layers (DL3009).",
+      "slug": "apt-cleanup",
+      "title": "Apt cache cleanup"
+     },
+     {
+      "description": "Adding --no-install-recommends to apt-get install (DL3015).",
+      "slug": "no-install-recommends",
+      "title": "Minimal apt installs"
+     }
+    ],
+    "description": "Rewrites that make RUN steps safer and images leaner.",
+    "slug": "build-hygiene",
+    "title": "Build hygiene fixes"
+   },
+   {
+    "areas": [
+     {
+      "description": "Making the final stage run as a non-root user (DL3002, DL3066) and flagging images that default to root (HF1004).",
+      "slug": "non-root-user",
+      "title": "Non-root user"
+     },
+     {
+      "description": "Converting shell-form CMD/ENTRYPOINT to exec form (DL3025, HF1001) so signals reach the process.",
+      "slug": "exec-form",
+      "title": "Exec-form commands"
+     },
+     {
+      "description": "Finding entrypoint shell scripts in the build context that do not exec their final command (HF1002).",
+      "slug": "entrypoint-scripts",
+      "title": "Entrypoint script checks"
+     },
+     {
+      "description": "Flagging containers that lack an init to reap zombies and forward signals (HF1003).",
+      "slug": "init-process",
+      "title": "Init process"
+     }
+    ],
+    "description": "Fixes and checks for how the container starts and which user it runs as.",
+    "slug": "runtime-hardening",
+    "title": "Container runtime hardening"
+   },
+   {
+    "areas": [
+     {
+      "description": "Printing a unified diff to stdout and applying it in place with --write.",
+      "slug": "diff-and-write",
+      "title": "Diff and write-back"
+     },
+     {
+      "description": "Writing a wrapped # hadofix(RULE) comment above every hunk explaining the fix.",
+      "slug": "fix-comments",
+      "title": "Teaching comments"
+     },
+     {
+      "description": "Summarising fixed and skipped findings on stderr, with what the reader must decide.",
+      "slug": "report",
+      "title": "Run report"
+     },
+     {
+      "description": "Honouring hadolint ignores and pragmas, dispatching rules to fixers, and leaving already-fixed files unchanged.",
+      "slug": "rule-config",
+      "title": "Rule selection and idempotence"
+     },
+     {
+      "description": "The hadofix command's arguments, options and exit status.",
+      "slug": "cli-exit",
+      "title": "Command line and exit codes"
+     }
+    ],
+    "description": "What the user sees and gets after a run: the diff, the explanations, the leftovers.",
+    "slug": "fix-output",
+    "title": "Fix results and reporting"
+   },
+   {
+    "areas": [
+     {
+      "description": "A sample Dockerfile and entrypoint script with typical findings for hadofix to fix.",
+      "slug": "basic-example",
+      "title": "Basic example image"
+     },
+     {
+      "description": "The example's shell entrypoint used to demonstrate entrypoint and signal-handling checks.",
+      "slug": "example-entrypoint",
+      "title": "Example entrypoint"
+     }
+    ],
+    "description": "Sample inputs that show the product in action.",
+    "slug": "examples",
+    "title": "Examples"
+   },
+   {
+    "areas": [
+     {
+      "description": "One-line installer that installs hadofix via pipx or pip.",
+      "slug": "installation",
+      "title": "Installation"
+     },
+     {
+      "description": "Make targets for setup, install, dev, lint, test, golden fixtures and build.",
+      "slug": "make-tasks",
+      "title": "Make tasks"
+     },
+     {
+      "description": "Markdown lint style rules applied to the project's documentation.",
+      "slug": "docs-linting",
+      "title": "Docs style linting"
+     }
+    ],
+    "description": "Installing hadofix and the tasks used to build, test and lint it.",
+    "slug": "developer-tooling",
+    "title": "Developer tooling"
+   }
+  ]
+ }
+}
