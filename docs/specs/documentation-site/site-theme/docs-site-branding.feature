@@ -9,8 +9,8 @@ Feature: Branding the documentation site
   Scenario: The docs and the splash page share one orange-red accent palette
     Given the site's accent pair is orange #fb923c and red #ef4444
     When a reader opens the splash page and then the rendered docs
-    Then the splash headline and install button use an orange-to-red gradient
-    And the docs header, navigation chrome and primary colour use red #ef4444
+    Then the splash headline and GitHub button use an orange-to-red gradient
+    And the docs primary colour is red #ef4444
     And interactive accents in the docs use orange #fb923c
 
   @id:docs.documentation-site.site-theme.002 @rule:docs.theme.links-legible-in-both-schemes @inferred @source:docs/stylesheets/extra.css#[data-md-color-scheme="slate"]

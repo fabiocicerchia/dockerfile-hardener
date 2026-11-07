@@ -8,10 +8,11 @@ Feature: Running hadolint for findings
 
   @id:finding-intake.hadolint-run.001 @rule:finding-intake.hadolint-run.findings-exit-is-a-normal-run @verified @source:hadofix_io.py#run_hadolint @test:tests/test_hadofix.py#test_the_cli_runs_hadolint_and_writes_the_fix @test:tests/test_hadofix.py#test_run_hadolint_asks_a_real_process_for_json
   Scenario: hadolint reporting findings is a normal run, not a failure
-    Given hadolint is installed and reports a DL3015 finding for the Dockerfile
+    Given hadolint is installed, reports a DL3015 finding for the Dockerfile and exits 1
+    And the Dockerfile has nothing else to fix
     When the operator runs hadofix on the Dockerfile with --write
     Then the unified diff adding --no-install-recommends is printed on stdout
-    And stderr says "fixed 1 finding in Dockerfile: DL3015"
+    And stderr says "hadofix: fixed 1 finding in Dockerfile: DL3015"
     And the Dockerfile on disk now contains --no-install-recommends
     And hadofix exits 0
 

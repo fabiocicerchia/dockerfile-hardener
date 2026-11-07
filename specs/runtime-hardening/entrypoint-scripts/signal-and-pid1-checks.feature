@@ -6,7 +6,7 @@ Feature: Checking that signals reach the application
   Scenario Outline: An entrypoint script from the build context that never calls exec is reported
     Given the build context has `entrypoint.sh`, a shell script with no `exec` line
     And the Dockerfile copies it in with `<copy>`
-    And the final stage has `ENTRYPOINT ["<path>"]`
+    And the final stage sets `USER 10001` and has `ENTRYPOINT ["<path>"]`
     When the operator runs hadofix on the Dockerfile
     Then the report lists HF1002 on the ENTRYPOINT line under "left for you"
     And the message says `entrypoint.sh` never calls exec and to end it with `exec "$@"`

@@ -10,7 +10,7 @@ Feature: Reporting what was fixed and what is left
 
   @id:fix-output.report.002 @rule:hadofix.report.unfixable-listed-untouched @verified @source:hadofix.py#fix @test:tests/test_hadofix.py#test_unknown_rules_are_listed_not_guessed_at
   Scenario: Findings hadofix cannot fix are listed with hadolint's message, never guessed at
-    Given hadolint reports DL3011 "Valid UNIX ports" on line 1
+    Given hadolint reports DL3011 "Valid UNIX ports" on line 1 of a Dockerfile that has nothing else to fix
     And hadofix has no fix for DL3011
     When the operator runs hadofix on the Dockerfile
     Then stdout is empty

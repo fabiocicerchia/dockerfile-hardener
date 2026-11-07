@@ -16,7 +16,7 @@ Feature: Gating CI on hadofix's exit status
       | a finding is left for the operator                    | with --write                                   | 1    |
       | the Dockerfile does not exist                         | without options                                | 66   |
       | the Dockerfile cannot be read for lack of permission  | without options                                | 77   |
-      | the Dockerfile path cannot be read for another reason | without options                                | 74   |
+      | the Dockerfile path is a directory                    | without options                                | 74   |
       | the hadolint binary is not installed                  | with --hadolint hadolint-that-is-not-installed | 69   |
 
   @id:fix-output.cli-exit.002 @rule:hadofix.cli.read-failure-message @verified @source:hadofix.py#main @test:tests/test_hadofix.py#test_missing_file_exits_ex_noinput

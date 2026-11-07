@@ -16,7 +16,7 @@ Feature: Letting hadolint decide what gets fixed
     And the operator's hadolint configuration ignores every rule, so hadolint reports nothing
     When the operator runs hadofix on the Dockerfile
     Then hadofix still raises HF1004
-    And the diff inserts `USER 10001` above the final command
+    And the diff inserts `USER 10001` above the final stage's first ENTRYPOINT or CMD
 
   @id:fix-output.rule-config.003 @rule:hadofix.rules.one-defect-one-fix @verified @source:hadofix.py#fix @test:tests/test_hadofix.py#test_golden
   Scenario: Two rules that describe the same defect on one line are fixed once

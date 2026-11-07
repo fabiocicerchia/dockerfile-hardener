@@ -35,7 +35,7 @@ Feature: Pinning package versions
     When the operator runs hadofix on the Dockerfile
     Then the Dockerfile is not changed
     And the report lists the finding under "left for you"
-    And the reason names `<package>` and says `<hint>` prints the version to write
+    And the reason names `<package>` and points to `<hint>` to find the version
 
     Examples:
       | manager | package | hint                         |
