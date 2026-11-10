@@ -1,0 +1,208 @@
+{
+ "excluded": {
+  "stylesheets/extra": [
+   {
+    "candidate": "Home hero headline gradient and tagline styling (.hero)",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "docs/stylesheets/extra.css#.md-typeset .hero"
+   },
+   {
+    "candidate": "Primary buttons as gradient pills with an indigo hover glow (.md-button) \u2014 glow colour rgba(99,102,241) is a leftover from the cyan-indigo palette",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "docs/stylesheets/extra.css#.md-typeset .md-button"
+   },
+   {
+    "candidate": "Feature cards lift on hover with accent border and accent icons (.grid.cards)",
+    "covered_by": "",
+    "reason": "UNVERIFIABLE",
+    "source": "docs/stylesheets/extra.css#.md-typeset .grid.cards > ul > li"
+   },
+   {
+    "candidate": "Tables styled as rounded cards; comment claims they scroll on narrow screens but the rule sets overflow: hidden",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "docs/stylesheets/extra.css#.md-typeset table:not([class])"
+   },
+   {
+    "candidate": "Translucent blurred header with hairline divider and tab opacity",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "docs/stylesheets/extra.css#.md-header"
+   },
+   {
+    "candidate": "Heading weights, letter-spacing and font features",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "docs/stylesheets/extra.css#.md-typeset h1"
+   },
+   {
+    "candidate": "Rounded bordered code blocks",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "docs/stylesheets/extra.css#.md-typeset .highlight"
+   },
+   {
+    "candidate": "Sidebar nav title/active link weights and footer colours",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "docs/stylesheets/extra.css#.md-footer-meta"
+   },
+   {
+    "candidate": "Smooth scrolling for in-page anchors",
+    "covered_by": "",
+    "reason": "TRIVIAL",
+    "source": "docs/stylesheets/extra.css#html"
+   }
+  ]
+ },
+ "lifted": {
+  "stylesheets/extra": []
+ },
+ "retired": [
+  "docs.documentation-site.site-theme.001",
+  "docs.documentation-site.site-theme.002"
+ ],
+ "scenarios": {
+  "docs.documentation-site.site-theme.003": {
+   "file": "docs/specs/documentation-site/site-theme/docs-site-branding.feature",
+   "fingerprint": "ac660254fd34",
+   "human": false,
+   "rule": "docs.theme.no-third-party-requests",
+   "source": "docs/stylesheets/extra.css#:root",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  },
+  "docs.documentation-site.site-theme.004": {
+   "file": "docs/specs/documentation-site/site-theme/docs-site-branding.feature",
+   "fingerprint": "c702704e5aae",
+   "human": false,
+   "rule": "docs.theme.no-placeholder-logo",
+   "source": "docs/stylesheets/extra.css#.md-header__button.md-logo",
+   "status": "inferred",
+   "test": "",
+   "tests": []
+  }
+ },
+ "taxonomy": {
+  "domains": [
+   {
+    "areas": [
+     {
+      "description": "Invoking hadolint on a Dockerfile and reading its JSON findings.",
+      "slug": "hadolint-run",
+      "title": "Running hadolint"
+     },
+     {
+      "description": "Accepting hadolint JSON piped in instead of running hadolint itself.",
+      "slug": "stdin-findings",
+      "title": "Findings from stdin"
+     },
+     {
+      "description": "Honouring .hadolint.yaml ignores and inline pragmas so ignored rules are never fixed.",
+      "slug": "rule-config",
+      "title": "Rule configuration"
+     }
+    ],
+    "description": "How hadofix obtains hadolint findings for a Dockerfile before deciding what to fix.",
+    "slug": "linting-input",
+    "title": "Linting input"
+   },
+   {
+    "areas": [
+     {
+      "description": "Pinning base images, digests and package versions only from available evidence.",
+      "slug": "image-pinning",
+      "title": "Image and version pinning"
+     },
+     {
+      "description": "Rewriting RUN, COPY, USER and similar instructions where the fix is unambiguous.",
+      "slug": "instruction-rewrites",
+      "title": "Instruction rewrites"
+     },
+     {
+      "description": "The comment written above each fix that teaches why the change was made.",
+      "slug": "fix-annotations",
+      "title": "Fix explanations"
+     },
+     {
+      "description": "Findings left unfixed and listed with what the reader still has to decide.",
+      "slug": "refusals",
+      "title": "Refused fixes"
+     }
+    ],
+    "description": "The mechanical rewrites hadofix applies to resolve findings safely.",
+    "slug": "dockerfile-fixes",
+    "title": "Dockerfile fixes"
+   },
+   {
+    "areas": [
+     {
+      "description": "The unified diff of proposed changes printed to stdout.",
+      "slug": "diff-output",
+      "title": "Diff preview"
+     },
+     {
+      "description": "The stderr summary of fixed and unfixed findings.",
+      "slug": "findings-report",
+      "title": "Findings report"
+     },
+     {
+      "description": "Writing fixes back to the Dockerfile with --write, plus exit codes for CI.",
+      "slug": "apply-changes",
+      "title": "Applying changes"
+     }
+    ],
+    "description": "What the user sees and how changes reach the Dockerfile.",
+    "slug": "output-reporting",
+    "title": "Output and reporting"
+   },
+   {
+    "areas": [
+     {
+      "description": "Accent palette, logo, header, typography and dark/light legibility shared by the docs and splash page.",
+      "slug": "site-theme",
+      "title": "Theme and branding"
+     },
+     {
+      "description": "Styled hero, feature cards, buttons, code blocks, tables, sidebar and footer used across pages.",
+      "slug": "page-components",
+      "title": "Page components"
+     },
+     {
+      "description": "Getting-started, CI usage, output reading and architecture pages.",
+      "slug": "guides",
+      "title": "Guides and reference"
+     }
+    ],
+    "description": "The published docs and landing page that explain and present the product.",
+    "slug": "documentation-site",
+    "title": "Documentation site"
+   },
+   {
+    "areas": [
+     {
+      "description": "Per-rule golden fixtures proving each fixer is correct and idempotent.",
+      "slug": "golden-tests",
+      "title": "Golden tests"
+     },
+     {
+      "description": "Pre-commit hooks, linting and secret scanning shared by local runs and CI.",
+      "slug": "quality-gates",
+      "title": "Quality gates"
+     },
+     {
+      "description": "Packaging, automated versioning, changelog and publishing to PyPI.",
+      "slug": "build-release",
+      "title": "Build and release"
+     }
+    ],
+    "description": "How the project is built, tested, checked and released.",
+    "slug": "developer-tooling",
+    "title": "Developer tooling"
+   }
+  ]
+ }
+}
