@@ -4,22 +4,26 @@ What this code does, one atomic Gherkin scenario per behaviour, read from the co
 Tags: `@verified` a test asserts it · `@inferred` read from the code only · `@gap` an entry point no test covers · `@human` written or amended by a person, never rewritten.
 
 ## Build hygiene fixes
+
 Rewrites that make RUN steps safer and images leaner.
 
 - **Apt cache cleanup**: [Build hygiene fixes](build-hygiene/apt-cleanup/build-hygiene-fixes.feature) (3)
 
 ## Developer tooling
+
 Installing hadofix and the tasks used to build, test and lint it.
 
 - **Installation**: [Installing hadofix with the one-line installer](developer-tooling/installation/one-line-installer.feature) (2)
 
 ## Finding intake
+
 How hadofix gets hadolint's findings and decides which ones to act on.
 
 - **Running hadolint**: [Running hadolint for findings](finding-intake/hadolint-run/running-hadolint.feature) (2)
 - **Findings from stdin**: [Supplying hadolint findings](finding-intake/stdin-findings/supplying-findings.feature) (2)
 
 ## Fix results and reporting
+
 What the user sees and gets after a run: the diff, the explanations, the leftovers.
 
 - **Command line and exit codes**: [Gating CI on hadofix's exit status](fix-output/cli-exit/cli-exit-codes.feature) (2)
@@ -28,6 +32,7 @@ What the user sees and gets after a run: the diff, the explanations, the leftove
 - **Rule selection and idempotence**: [Letting hadolint decide what gets fixed](fix-output/rule-config/rule-selection.feature) (1)
 
 ## Image and package pinning
+
 Making builds reproducible by pinning base images and installed packages from evidence.
 
 - **Base image pinning**: [Pinning base images](image-pinning/base-image-pin/base-image-pinning.feature) (2)
@@ -35,6 +40,7 @@ Making builds reproducible by pinning base images and installed packages from ev
 - **OS package pinning**: [Pinning package versions](image-pinning/os-package-pin/package-version-pinning.feature) (3)
 
 ## Container runtime hardening
+
 Fixes and checks for how the container starts and which user it runs as.
 
 - **Entrypoint script checks**: [Checking that signals reach the application](runtime-hardening/entrypoint-scripts/signal-and-pid1-checks.feature) (3)
