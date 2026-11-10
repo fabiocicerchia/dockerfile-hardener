@@ -6,4 +6,4 @@ Tags: `@verified` a test asserts it · `@inferred` read from the code only · `@
 ## Documentation site
 The published docs and landing page that explain and present the product.
 
-- **Theme and branding**: [Branding the documentation site](documentation-site/site-theme/docs-site-branding.feature) (4)
+- **Theme and branding**: [Branding the documentation site](documentation-site/site-theme/docs-site-branding.feature) (2)

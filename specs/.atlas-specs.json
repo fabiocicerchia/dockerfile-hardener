@@ -285,7 +285,13 @@
   "dockerfile-hardener/mdl-style": [],
   "examples/basic": []
  },
- "retired": [],
+ "retired": [
+  "image-pinning.digest-lookup.001",
+  "image-pinning.base-image-pin.003",
+  "fix-output.rule-config.002",
+  "fix-output.rule-config.003",
+  "fix-output.report.001"
+ ],
  "scenarios": {
   "build-hygiene.apt-cleanup.001": {
    "file": "specs/build-hygiene/apt-cleanup/build-hygiene-fixes.feature",
@@ -476,18 +482,6 @@
     "tests/test_hadofix.py#test_hadolint_drives_one_pass_to_clean"
    ]
   },
-  "fix-output.report.001": {
-   "file": "specs/fix-output/report/run-report.feature",
-   "fingerprint": "03126d6a7c10",
-   "human": false,
-   "rule": "hadofix.report.fixed-summary",
-   "source": "hadofix.py#render_report",
-   "status": "verified",
-   "test": "tests/test_hadofix.py#test_golden",
-   "tests": [
-    "tests/test_hadofix.py#test_golden"
-   ]
-  },
   "fix-output.report.002": {
    "file": "specs/fix-output/report/run-report.feature",
    "fingerprint": "66e593eaafe0",
@@ -524,28 +518,6 @@
     "tests/test_hadofix.py#test_our_own_rules_are_idempotent"
    ]
   },
-  "fix-output.rule-config.002": {
-   "file": "specs/fix-output/rule-config/rule-selection.feature",
-   "fingerprint": "aebdd6154d18",
-   "human": false,
-   "rule": "hadofix.rules.own-rules-not-switchable",
-   "source": "hadofix.py#own_findings",
-   "status": "inferred",
-   "test": "",
-   "tests": []
-  },
-  "fix-output.rule-config.003": {
-   "file": "specs/fix-output/rule-config/rule-selection.feature",
-   "fingerprint": "66e593eaafe0",
-   "human": false,
-   "rule": "hadofix.rules.one-defect-one-fix",
-   "source": "hadofix.py#fix",
-   "status": "verified",
-   "test": "tests/test_hadofix.py#test_golden",
-   "tests": [
-    "tests/test_hadofix.py#test_golden"
-   ]
-  },
   "image-pinning.base-image-pin.001": {
    "file": "specs/image-pinning/base-image-pin/base-image-pinning.feature",
    "fingerprint": "d380442e2290",
@@ -570,31 +542,6 @@
     "tests/test_hadofix.py#test_golden",
     "tests/test_hadofix.py#test_a_stage_is_never_evidence_for_itself",
     "tests/test_hadofix.py#test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer"
-   ]
-  },
-  "image-pinning.base-image-pin.003": {
-   "file": "specs/image-pinning/base-image-pin/base-image-pinning.feature",
-   "fingerprint": "f547b9169796",
-   "human": false,
-   "rule": "hadofix.base-pin.digest-on-request",
-   "source": "hadofix.py#_resolve_base",
-   "status": "verified",
-   "test": "tests/test_hadofix.py#test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer",
-   "tests": [
-    "tests/test_hadofix.py#test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer"
-   ]
-  },
-  "image-pinning.digest-lookup.001": {
-   "file": "specs/image-pinning/digest-lookup/docker-hub-digest-lookup.feature",
-   "fingerprint": "de7816d20633",
-   "human": false,
-   "rule": "image-pinning.digest-lookup.network-only-on-opt-in",
-   "source": "hadofix.py#main",
-   "status": "verified",
-   "test": "tests/test_hadofix.py#test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer",
-   "tests": [
-    "tests/test_hadofix.py#test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer",
-    "tests/test_hadofix.py#test_a_stage_is_never_evidence_for_itself"
    ]
   },
   "image-pinning.digest-lookup.002": {

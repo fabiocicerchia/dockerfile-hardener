@@ -2,12 +2,6 @@
 Feature: Reporting what was fixed and what is left
   Tells operators on stderr which findings were fixed and, for every one that was not, what they have to decide.
 
-  @id:fix-output.report.001 @rule:hadofix.report.fixed-summary @verified @source:hadofix.py#render_report @test:tests/test_hadofix.py#test_golden
-  Scenario: Fixed findings are summarised in one line with their rule codes
-    Given hadofix fixes DL3002 and DL3066 in the Dockerfile
-    When the operator runs hadofix on the Dockerfile
-    Then stderr says "hadofix: fixed 2 findings in Dockerfile: DL3002, DL3066"
-
   @id:fix-output.report.002 @rule:hadofix.report.unfixable-listed-untouched @verified @source:hadofix.py#fix @test:tests/test_hadofix.py#test_unknown_rules_are_listed_not_guessed_at
   Scenario: Findings hadofix cannot fix are listed with hadolint's message, never guessed at
     Given hadolint reports DL3011 "Valid UNIX ports" on line 1 of a Dockerfile that has nothing else to fix

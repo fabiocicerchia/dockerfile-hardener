@@ -28,13 +28,3 @@ Feature: Pinning base images
     Then the Dockerfile is not changed
     And the report lists DL3006 under "left for you"
     And the reason says hadofix does not pick versions and suggests writing the tested tag or passing --resolve-digests to pin `ubuntu:latest`
-
-  @id:image-pinning.base-image-pin.003 @rule:hadofix.base-pin.digest-on-request @verified @source:hadofix.py#_resolve_base @test:tests/test_hadofix.py#test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer
-  Scenario: With digest resolution requested, a floating base image is pinned to the digest its tag resolves to now
-    Given no other stage pins the image `ubuntu`
-    And the Dockerfile is built `FROM ubuntu`
-    And Docker Hub resolves `ubuntu:latest` to `sha256:0000…0000`
-    When the operator runs hadofix with --resolve-digests
-    Then the diff rewrites the line to `FROM ubuntu@sha256:0000…0000`
-    And the comment above it says a digest names the exact bytes
-    And the report lists DL3006 as fixed

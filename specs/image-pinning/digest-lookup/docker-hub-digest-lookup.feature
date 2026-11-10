@@ -5,14 +5,6 @@ Feature: Pinning base images to Docker Hub digests
   Background:
     Given no other stage in the Dockerfile pins the base image
 
-  @id:image-pinning.digest-lookup.001 @rule:image-pinning.digest-lookup.network-only-on-opt-in @verified @source:hadofix.py#main @test:tests/test_hadofix.py#test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer @test:tests/test_hadofix.py#test_a_stage_is_never_evidence_for_itself
-  Scenario: Base images are pinned to a registry digest only when the operator asks for it
-    Given the Dockerfile starts with "FROM ubuntu"
-    And hadolint reports DL3006 on that line
-    When the operator runs hadofix on the Dockerfile without --resolve-digests
-    Then the FROM line is left unchanged
-    And the report lists DL3006 under "left for you", suggesting to write the tag tested against or pass --resolve-digests to pin `ubuntu:latest`
-
   @id:image-pinning.digest-lookup.002 @rule:image-pinning.digest-lookup.pins-docker-hub-digest @verified @source:hadofix_io.py#resolve_digest @test:tests/test_hadofix.py#test_resolve_digest_uses_the_injected_fetch @test:tests/test_hadofix.py#test_the_base_pin_uses_the_resolver_only_when_the_file_has_no_answer @questionable
   Scenario Outline: An unpinned Docker Hub base image is pinned to the digest Docker Hub serves for its tag
     Given the Dockerfile starts with "FROM <written>"

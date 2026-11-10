@@ -9,19 +9,3 @@ Feature: Letting hadolint decide what gets fixed
     When the operator runs hadofix on the Dockerfile
     Then stdout is empty
     And the Dockerfile is not changed
-
-  @id:fix-output.rule-config.002 @rule:hadofix.rules.own-rules-not-switchable @inferred @source:hadofix.py#own_findings @questionable
-  Scenario: hadofix's own HF rules apply whatever hadolint is configured to ignore
-    Given the final stage never sets a USER
-    And the operator's hadolint configuration ignores every rule, so hadolint reports nothing
-    When the operator runs hadofix on the Dockerfile
-    Then hadofix still raises HF1004
-    And the diff inserts `USER 10001` above the final stage's first ENTRYPOINT or CMD
-
-  @id:fix-output.rule-config.003 @rule:hadofix.rules.one-defect-one-fix @verified @source:hadofix.py#fix @test:tests/test_hadofix.py#test_golden
-  Scenario: Two rules that describe the same defect on one line are fixed once
-    Given hadolint reports DL3025 on `CMD /usr/local/bin/app --port 8080`
-    And hadofix raises HF1001 on the same line
-    When the operator runs hadofix on the Dockerfile
-    Then the diff contains a single exec-form rewrite with a single comment
-    And the report counts both DL3025 and HF1001 as fixed

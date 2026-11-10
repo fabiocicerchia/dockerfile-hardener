@@ -24,14 +24,14 @@ What the user sees and gets after a run: the diff, the explanations, the leftove
 
 - **Command line and exit codes**: [Gating CI on hadofix's exit status](fix-output/cli-exit/cli-exit-codes.feature) (2)
 - **Diff and write-back**: [Reviewing and applying fixes](fix-output/diff-and-write/diff-and-write.feature) (4)
-- **Run report**: [Reporting what was fixed and what is left](fix-output/report/run-report.feature) (3)
-- **Rule selection and idempotence**: [Letting hadolint decide what gets fixed](fix-output/rule-config/rule-selection.feature) (3)
+- **Run report**: [Reporting what was fixed and what is left](fix-output/report/run-report.feature) (2)
+- **Rule selection and idempotence**: [Letting hadolint decide what gets fixed](fix-output/rule-config/rule-selection.feature) (1)
 
 ## Image and package pinning
 Making builds reproducible by pinning base images and installed packages from evidence.
 
-- **Base image pinning**: [Pinning base images](image-pinning/base-image-pin/base-image-pinning.feature) (3)
-- **Registry digest lookup**: [Pinning base images to Docker Hub digests](image-pinning/digest-lookup/docker-hub-digest-lookup.feature) (4)
+- **Base image pinning**: [Pinning base images](image-pinning/base-image-pin/base-image-pinning.feature) (2)
+- **Registry digest lookup**: [Pinning base images to Docker Hub digests](image-pinning/digest-lookup/docker-hub-digest-lookup.feature) (3)
 - **OS package pinning**: [Pinning package versions](image-pinning/os-package-pin/package-version-pinning.feature) (3)
 
 ## Container runtime hardening
